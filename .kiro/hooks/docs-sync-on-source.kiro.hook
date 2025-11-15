@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Monitors Go source files, configuration files, and project structure changes to keep documentation in README.md, API.md, and INTEGRATION.md up to date",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.go",
+      "go.mod",
+      "go.sum",
+      "Makefile",
+      "install.sh",
+      "install.ps1"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source files or configuration have been modified. Review the changes and update the relevant documentation files (README.md, API.md, or INTEGRATION.md) to reflect any new features, API changes, installation steps, or architectural modifications. Ensure documentation stays accurate and comprehensive."
+  }
+}

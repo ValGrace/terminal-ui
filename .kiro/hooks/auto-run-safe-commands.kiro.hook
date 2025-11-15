@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Auto-run Safe Commands",
+  "description": "Automatically detects and runs commands that are marked as non-sensitive in the command history tracker system",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "commands.db",
+      "test.db",
+      "internal/executor/*.go",
+      "internal/storage/*.go"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the command history database and executor code changes. Identify any new commands that are marked as non-sensitive or safe to execute. For commands that meet the safety criteria (read-only operations, non-destructive commands like ls, pwd, git status, etc.), automatically execute them. Provide a summary of which commands were auto-executed and their results. Skip any commands that involve write operations, deletions, system modifications, or network operations."
+  }
+}
