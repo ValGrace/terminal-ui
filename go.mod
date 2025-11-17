@@ -1,4 +1,4 @@
-module command-history-tracker
+module github.com/ValGrace/command-history-tracker
 
 go 1.24.0
 
