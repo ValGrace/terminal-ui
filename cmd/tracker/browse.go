@@ -1,9 +1,9 @@
 package main
 
 import (
-	"command-history-tracker/internal/browser"
-	"command-history-tracker/internal/config"
-	"command-history-tracker/internal/storage"
+	"github.com/ValGrace/command-history-tracker/internal/browser"
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/internal/storage"
 	"fmt"
 	"os"
 

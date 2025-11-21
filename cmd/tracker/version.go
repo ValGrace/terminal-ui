@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ValGrace/command-history-tracker/pkg/history/version"
+	"github.com/ValGrace/command-history-tracker/internal/version"
 	"fmt"
 
 	"github.com/spf13/cobra"
