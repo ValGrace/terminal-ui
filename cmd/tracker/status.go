@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ValGrace/command-history-tracker/pkg/history/interceptor"
+	"github.com/ValGrace/command-history-tracker/internal/interceptor"
 
 	"github.com/spf13/cobra"
 )

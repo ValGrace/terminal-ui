@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/ValGrace/command-history-tracker/internal/config"
 	"github.com/command-history-tracker/pkg/shell"
 )
 
