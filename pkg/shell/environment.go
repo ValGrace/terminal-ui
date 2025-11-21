@@ -4,6 +4,7 @@ import (
 	"command-history-tracker/pkg/history"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 )
@@ -199,6 +200,12 @@ func (e *EnvironmentManager) IsTrackerEnabled() bool {
 	// Check if tracker path is available
 	trackerPath := os.Getenv("CHT_TRACKER_PATH")
 	if trackerPath == "" {
+		// If not explicitly set, try to locate the 'tracker' executable on PATH
+		if p, err := exec.LookPath("tracker"); err == nil {
+			// Cache discovered path for subsequent checks
+			_ = os.Setenv("CHT_TRACKER_PATH", p)
+			return true
+		}
 		return false
 	}
 

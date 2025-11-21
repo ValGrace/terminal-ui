@@ -26,7 +26,7 @@ if ($trackerPath) {
     Write-Host ""
     
     # Prompt for automatic setup
-    Write-Host "Would you like to set up shell integration now? (Y/n): " -ForegroundColor Cyan -NoNewline
+    Write-Host "Would you like to set up shell integration now? Y/n: " -ForegroundColor Cyan -NoNewline
     $response = Read-Host
     
     if ($response -eq "" -or $response -eq "y" -or $response -eq "Y") {
