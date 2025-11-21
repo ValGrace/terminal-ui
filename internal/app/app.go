@@ -1,13 +1,13 @@
 package app
 
 import (
-	"github.com/ValGrace/command-history-tracker/pkg/history/browser"
-	"github.com/ValGrace/command-history-tracker/pkg/history/config"
-	"github.com/ValGrace/command-history-tracker/pkg/history/errors"
-	"github.com/ValGrace/command-history-tracker/pkg/history/executor"
-	"github.com/ValGrace/command-history-tracker/pkg/history/interceptor"
-	"github.com/ValGrace/command-history-tracker/pkg/history/logging"
-	"github.com/ValGrace/command-history-tracker/pkg/history/storage"
+	"github.com/ValGrace/command-history-tracker/internal/browser"
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/internal/errors"
+	"github.com/ValGrace/command-history-tracker/internal/executor"
+	"github.com/ValGrace/command-history-tracker/internal/interceptor"
+	"github.com/ValGrace/command-history-tracker/internal/logging"
+	"github.com/ValGrace/command-history-tracker/internal/storage"
 	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"fmt"
 	"os"
