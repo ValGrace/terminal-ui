@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"os"
 	"path/filepath"
 	"runtime"

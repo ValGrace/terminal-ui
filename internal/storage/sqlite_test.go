@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // setupTestStorage creates a temporary SQLite storage for testing

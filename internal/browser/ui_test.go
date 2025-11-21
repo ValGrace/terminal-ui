@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // MockStorage implements the StorageEngine interface for testing

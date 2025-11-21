@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
-	"command-history-tracker/internal/config"
-	"command-history-tracker/internal/storage"
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history/storage"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"os"
 	"path/filepath"
 	"strings"

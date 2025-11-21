@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // Config represents the application configuration

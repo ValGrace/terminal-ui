@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"command-history-tracker/internal/app"
-	"command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history/app"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
 	"github.com/spf13/cobra"
 )
 

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"command-history-tracker/internal/config"
-	"command-history-tracker/pkg/shell"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/command-history-tracker/pkg/shell"
 )
 
 func TestSetupWorkflow(t *testing.T) {

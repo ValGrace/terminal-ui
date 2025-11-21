@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"command-history-tracker/internal/config"
-	"command-history-tracker/internal/storage"
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history/storage"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // TestEndToEndWorkflow tests the complete workflow from installation to command browsing

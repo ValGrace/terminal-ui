@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"command-history-tracker/internal/errors"
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/internal/errors"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // Executor implements the CommandExecutor interface

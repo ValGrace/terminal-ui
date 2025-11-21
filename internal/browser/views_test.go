@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // Test View Rendering Functions

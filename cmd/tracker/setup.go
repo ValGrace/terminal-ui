@@ -2,10 +2,10 @@ package main
 
 import (
 	"bufio"
-	"command-history-tracker/internal/config"
-	"command-history-tracker/internal/interceptor"
-	"command-history-tracker/pkg/history"
-	"command-history-tracker/pkg/shell"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history/interceptor"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"path/filepath"

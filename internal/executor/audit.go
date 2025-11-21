@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // AuditEntry represents a single audit log entry

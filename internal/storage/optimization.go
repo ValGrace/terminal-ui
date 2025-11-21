@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 // OptimizationEngine provides storage optimization features

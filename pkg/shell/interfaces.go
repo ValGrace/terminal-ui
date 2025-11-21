@@ -1,6 +1,6 @@
 package shell
 
-import "command-history-tracker/pkg/history"
+import "github.com/ValGrace/command-history-tracker/pkg/history"
 
 // ShellDetector identifies the current shell environment
 type ShellDetector interface {

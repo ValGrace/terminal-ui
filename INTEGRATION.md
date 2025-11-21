@@ -23,7 +23,7 @@ import (
     
     "command-history-tracker/internal/config"
     "command-history-tracker/internal/storage"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 func main() {
@@ -105,7 +105,7 @@ import (
     "log"
     
     "command-history-tracker/internal/storage"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 type SimpleBrowser struct {
@@ -167,7 +167,7 @@ You can implement custom storage backends by implementing the `StorageEngine` in
 package customstorage
 
 import (
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 type CustomStorage struct {
@@ -463,7 +463,7 @@ import (
     "regexp"
     
     "command-history-tracker/internal/executor"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 type CustomExecutor struct {

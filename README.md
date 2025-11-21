@@ -172,7 +172,7 @@ import (
     "fmt"
     "log"
     
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
     "command-history-tracker/internal/storage"
     "command-history-tracker/internal/config"
 )
@@ -214,7 +214,7 @@ import (
     "time"
     
     "command-history-tracker/internal/storage"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 func main() {
@@ -250,7 +250,7 @@ import (
     "log"
     
     "command-history-tracker/internal/executor"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 func main() {

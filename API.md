@@ -16,7 +16,7 @@ This document provides comprehensive API documentation for the Command History T
 
 The `StorageEngine` interface defines methods for persisting and retrieving command history.
 
-**Package**: `command-history-tracker/pkg/history`
+**Package**: `github.com/ValGrace/command-history-tracker/pkg/history`
 
 ```go
 type StorageEngine interface {
@@ -112,7 +112,7 @@ type CommandExecutor interface {
 
 Represents a single command execution record.
 
-**Package**: `command-history-tracker/pkg/history`
+**Package**: `github.com/ValGrace/command-history-tracker/pkg/history`
 
 ```go
 type CommandRecord struct {
@@ -342,7 +342,7 @@ import (
     "time"
     
     "command-history-tracker/internal/storage"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 func main() {
@@ -432,7 +432,7 @@ import (
     
     "command-history-tracker/internal/executor"
     "command-history-tracker/internal/storage"
-    "command-history-tracker/pkg/history"
+    "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
 func main() {

@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"command-history-tracker/internal/config"
-	"command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/history/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"fmt"
 	"os"
 	"strconv"

@@ -1,9 +1,9 @@
 package interceptor
 
 import (
-	"command-history-tracker/internal/config"
-	"command-history-tracker/pkg/history"
-	"command-history-tracker/pkg/shell"
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"os/exec"

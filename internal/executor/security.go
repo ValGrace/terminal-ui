@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"command-history-tracker/internal/errors"
+	"github.com/ValGrace/command-history-tracker/internal/errors"
 )
 
 // SecurityPolicy defines security rules for command execution
