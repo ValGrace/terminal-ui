@@ -437,7 +437,9 @@ func TestSQLiteStorage_GetDatabaseSize(t *testing.T) {
 	}
 
 	// Force a checkpoint to ensure data is written to disk
-	storage.OptimizeDatabase()
+	if err := storage.OptimizeDatabase(); err != nil {
+		t.Fatalf("OptimizeDatabase failed: %v", err)
+	}
 
 	newSize, err := storage.GetDatabaseSize()
 	if err != nil {
