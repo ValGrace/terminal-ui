@@ -79,7 +79,7 @@ build_binary() {
     
     echo "Building for $os/$arch..."
     
-    GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build \
+    GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build \
         -ldflags "$LDFLAGS" \
         -o "$OUT_DIR/$output" \
         ./cmd/tracker

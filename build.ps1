@@ -69,7 +69,7 @@ function Build-Binary {
     
     $env:GOOS = $OS
     $env:GOARCH = $Arch
-    $env:CGO_ENABLED = "0"
+    $env:CGO_ENABLED = "1"
     
     $outputPath = Join-Path $outDir $Output
     

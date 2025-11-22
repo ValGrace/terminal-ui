@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"github.com/ValGrace/command-history-tracker/pkg/shell"
 )
 
@@ -82,7 +83,7 @@ func TestShellDetection(t *testing.T) {
 			t.Fatalf("Failed to detect shell: %v", err)
 		}
 
-		if shellType == shell.Unknown {
+		if shellType == history.Unknown {
 			t.Error("Expected to detect a known shell type")
 		}
 
