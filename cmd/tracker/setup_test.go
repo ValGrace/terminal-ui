@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
 	"github.com/ValGrace/command-history-tracker/internal/config"
 	"github.com/ValGrace/command-history-tracker/pkg/shell"
 )

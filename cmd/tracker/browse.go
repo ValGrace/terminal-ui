@@ -6,7 +6,6 @@ import (
 	"github.com/ValGrace/command-history-tracker/internal/storage"
 	"fmt"
 	"os"
-
 	"github.com/spf13/cobra"
 )
 

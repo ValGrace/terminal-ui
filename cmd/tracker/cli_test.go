@@ -7,7 +7,6 @@ import (
 	"github.com/ValGrace/command-history-tracker/pkg/history"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -499,7 +498,7 @@ func TestCommandChaining(t *testing.T) {
 
 // TestErrorHandling tests error handling in CLI commands
 func TestErrorHandling(t *testing.T) {
-	tmpDir := t.TempDir()
+	// tmpDir := t.TempDir()
 
 	t.Run("InvalidStoragePath", func(t *testing.T) {
 		cfg := config.DefaultConfig()
