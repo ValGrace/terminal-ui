@@ -267,7 +267,7 @@ func TestFormatDirectoryTreeLine(t *testing.T) {
 		},
 		Level:      1,
 		IsExpanded: true,
-		Children:   []DirectoryTreeItem{},
+		Children:   []*DirectoryTreeItem{},
 	}
 
 	result := model.formatDirectoryTreeLine(item, false)
@@ -286,7 +286,8 @@ func TestFormatDirectoryTreeLine(t *testing.T) {
 	}
 
 	// Test with children (should show folder icon)
-	item.Children = []DirectoryTreeItem{{}}
+	// Children is a slice of pointers to DirectoryTreeItem, assign accordingly
+	item.Children = []*DirectoryTreeItem{&DirectoryTreeItem{}}
 	result = model.formatDirectoryTreeLine(item, false)
 
 	if !strings.Contains(result, "📂") && !strings.Contains(result, "📁") {

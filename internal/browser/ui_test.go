@@ -223,7 +223,7 @@ func TestGetMaxIndex(t *testing.T) {
 
 // Test Filtering Functions
 
-func TestApplyFilters(t *testing.T) {
+func TestApplyFilters_UI(t *testing.T) {
 	model, _ := setupTestModel()
 	model.commands = []history.CommandRecord{
 		createTestCommand("1", "ls -la", "/home/user", history.Bash, 0),
@@ -302,7 +302,7 @@ func TestDateFilter(t *testing.T) {
 	}
 }
 
-func TestClearFilters(t *testing.T) {
+func TestClearFilters_UI(t *testing.T) {
 	model, _ := setupTestModel()
 	model.searchQuery = "test"
 	model.dateFilter.Enabled = true
