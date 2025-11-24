@@ -83,7 +83,7 @@ func runConfig(cmd *cobra.Command, args []string) error {
 }
 
 func listConfig(cfg *config.Config) error {
-	fmt.Println("=== Command History Tracker Configuration ===\n")
+	fmt.Println("=== Command History Tracker Configuration ===")
 
 	fmt.Printf("Storage Path:       %s\n", cfg.StoragePath)
 	fmt.Printf("Retention Days:     %d\n", cfg.RetentionDays)
@@ -239,8 +239,8 @@ func resetConfig() error {
 func editConfigInteractive(cfg *config.Config) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("=== Interactive Configuration Editor ===\n")
-	fmt.Println("Press Enter to keep current value, or enter new value.\n")
+	fmt.Println("=== Interactive Configuration Editor ===")
+	fmt.Println("Press Enter to keep current value, or enter new value.")
 
 	// Edit retention days
 	fmt.Printf("Retention days [%d]: ", cfg.RetentionDays)

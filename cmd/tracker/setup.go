@@ -217,7 +217,7 @@ func verifySetup(shellType history.ShellType) error {
 }
 
 func runVerify(cmd *cobra.Command, args []string) error {
-	fmt.Println("=== Verifying Command History Tracker Installation ===\n")
+	fmt.Println("=== Verifying Command History Tracker Installation ===")
 
 	hasErrors := false
 
@@ -384,13 +384,13 @@ func promptForAutoSetup() error {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("=== Welcome to Command History Tracker ===\n")
+	fmt.Println("=== Welcome to Command History Tracker ===")
 	fmt.Println("It looks like this is your first time running the tracker.")
-	fmt.Println("The tracker can automatically record your terminal commands for easy browsing and re-execution.\n")
+	fmt.Println("The tracker can automatically record your terminal commands for easy browsing and re-execution.")
 	fmt.Println("Setup options:")
 	fmt.Println("  1. Quick setup (automatic with defaults)")
 	fmt.Println("  2. Custom setup (interactive wizard)")
-	fmt.Println("  3. Skip setup (configure later)\n")
+	fmt.Println("  3. Skip setup (configure later)")
 	fmt.Print("Choose an option (1/2/3): ")
 
 	response, _ := reader.ReadString('\n')
@@ -517,8 +517,8 @@ func printShellRestartInstructions(shellType history.ShellType) {
 func runInteractiveSetup() error {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("=== Command History Tracker Setup Wizard ===\n")
-	fmt.Println("This wizard will help you configure command recording for your shell.\n")
+	fmt.Println("=== Command History Tracker Setup Wizard ===")
+	fmt.Println("This wizard will help you configure command recording for your shell.")
 
 	// Detect shell
 	detector := shell.NewDetector()
@@ -570,7 +570,7 @@ func runInteractiveSetup() error {
 		cfg = config.DefaultConfig()
 	}
 
-	fmt.Println("\n--- Configuration Options ---\n")
+	fmt.Println("\n--- Configuration Options ---")
 
 	// Configure retention
 	fmt.Printf("Retention period: How long to keep command history\n")

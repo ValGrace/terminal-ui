@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+    "strconv"
 	"strings"
 	"time"
 )
@@ -381,9 +382,14 @@ func (w *WindowsCapture) getDuration() time.Duration {
 
 // parseIntSafe safely parses an integer string
 func (w *WindowsCapture) parseIntSafe(s string) int {
-	var result int
-	fmt.Sscanf(s, "%d", &result)
-	return result
+	// Prefer strconv.Atoi for robust parsing and explicit error handling
+	if s == "" {
+		return -1
+	}
+	if i, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
+		return i
+	}
+	return -1
 }
 
 // isParentProcessPowerShell checks if the parent process is PowerShell
