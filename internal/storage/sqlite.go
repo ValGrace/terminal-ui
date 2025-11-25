@@ -334,7 +334,14 @@ func (s *SQLiteStorage) BatchSaveCommands(commands []history.CommandRecord) erro
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	// Ensure rollback is attempted if commit is not reached. Check the
+	// returned error and ignore ErrTxDone which indicates the transaction
+	// has already been committed or rolled back.
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			fmt.Printf("Warning: failed to rollback transaction: %v\n", err)
+		}
+	}()
 
 	insertSQL := `
 	INSERT INTO commands (id, command, directory, timestamp, shell, exit_code, duration, tags)
