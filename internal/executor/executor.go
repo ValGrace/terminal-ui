@@ -129,7 +129,9 @@ func (e *Executor) ValidateCommand(cmd *history.CommandRecord) error {
 		if pattern.MatchString(cmd.Command) {
 			// Log blocked command
 			if e.auditLogger != nil {
-				e.auditLogger.LogBlocked(cmd.Command, cmd.Directory, cmd.Shell, "dangerous_pattern")
+				if err := e.auditLogger.LogBlocked(cmd.Command, cmd.Directory, cmd.Shell, "dangerous_pattern"); err != nil {
+					fmt.Printf("Warning: failed to write audit log (blocked): %v\n", err)
+				}
 			}
 
 			return errors.NewExecutionError(
@@ -144,7 +146,9 @@ func (e *Executor) ValidateCommand(cmd *history.CommandRecord) error {
 		if err := e.validator.Validate(cmd.Command, cmd.Directory); err != nil {
 			// Log blocked command
 			if e.auditLogger != nil {
-				e.auditLogger.LogBlocked(cmd.Command, cmd.Directory, cmd.Shell, "validation_failed")
+					if err := e.auditLogger.LogBlocked(cmd.Command, cmd.Directory, cmd.Shell, "validation_failed"); err != nil {
+						fmt.Printf("Warning: failed to write audit log (validation_failed): %v\n", err)
+					}
 			}
 			return err
 		}
@@ -213,7 +217,9 @@ func (e *Executor) ConfirmExecution(cmd *history.CommandRecord) (bool, error) {
 
 	// Log cancellation if not confirmed
 	if !confirmed && e.auditLogger != nil {
-		e.auditLogger.LogCancelled(cmd, "user_declined")
+		if err := e.auditLogger.LogCancelled(cmd, "user_declined"); err != nil {
+			fmt.Printf("Warning: failed to write audit log (cancelled): %v\n", err)
+		}
 	}
 
 	return confirmed, nil
@@ -293,13 +299,17 @@ func (e *Executor) ExecuteCommand(cmd *history.CommandRecord, currentDir string)
 	}
 
 	// Log to audit trail
-	if e.auditLogger != nil {
-		if result.ExitCode == 0 {
-			e.auditLogger.LogSuccess(cmd, result.Duration)
-		} else {
-			e.auditLogger.LogFailure(cmd, result.ExitCode, result.Duration, "command_failed")
+		if e.auditLogger != nil {
+			if result.ExitCode == 0 {
+				if err := e.auditLogger.LogSuccess(cmd, result.Duration); err != nil {
+					fmt.Printf("Warning: failed to write audit log (success): %v\n", err)
+				}
+			} else {
+				if err := e.auditLogger.LogFailure(cmd, result.ExitCode, result.Duration, "command_failed"); err != nil {
+					fmt.Printf("Warning: failed to write audit log (failure): %v\n", err)
+				}
+			}
 		}
-	}
 
 	return nil
 }

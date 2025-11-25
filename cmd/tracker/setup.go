@@ -645,7 +645,7 @@ func runInteractiveSetup() error {
 		}
 
 	// Configure auto cleanup
-	fmt.Printf("\nAuto cleanup: Automatically remove old commands based on retention policy\n")
+	fmt.Printf("\nAuto cleanup: Automatically remove old commands based on retention policy")
 	fmt.Printf("Current: %v\n", cfg.AutoCleanup)
 	fmt.Print("Enable auto cleanup? (Y/n): ")
 		response, err = reader.ReadString('\n')
@@ -764,11 +764,11 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response != "y" && response != "yes" {
-		fmt.Println("\nUninstall cancelled.")
+		fmt.Println("Uninstall cancelled.")
 		return nil
 	}
 
-	fmt.Println("\nStarting uninstall process...\n")
+	fmt.Println("\nStarting uninstall process...")
 
 	// Detect current shell for cleanup
 	detector := shell.NewDetector()

@@ -31,10 +31,18 @@ func TestOptimizationEngine_ApplyCleanupPolicy(t *testing.T) {
 	gitCmd := createTestCommand("git-1", "git status", "/home/user", history.Bash)
 	gitCmd.Timestamp = now.AddDate(0, 0, -100)
 
-	storage.SaveCommand(oldCmd1)
-	storage.SaveCommand(oldCmd2)
-	storage.SaveCommand(recentCmd)
-	storage.SaveCommand(gitCmd)
+	if err := storage.SaveCommand(oldCmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(oldCmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(recentCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(gitCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Apply cleanup policy
 	policy := &CleanupPolicy{
@@ -90,9 +98,15 @@ func TestOptimizationEngine_GetStorageStats(t *testing.T) {
 	cmd2 := createTestCommand("test-2", "pwd", "/home/user", history.PowerShell)
 	cmd3 := createTestCommand("test-3", "cd", "/tmp", history.Zsh)
 
-	storage.SaveCommand(cmd1)
-	storage.SaveCommand(cmd2)
-	storage.SaveCommand(cmd3)
+	if err := storage.SaveCommand(cmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd3); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Get storage stats
 	stats, err := optimizer.GetStorageStats()
@@ -184,9 +198,15 @@ func TestRetentionManager(t *testing.T) {
 	recentCmd := createTestCommand("recent-1", "recent command", "/home/user", history.Bash)
 	recentCmd.Timestamp = now.Add(-30 * time.Minute) // Recent
 
-	storage.SaveCommand(oldCmd)
-	storage.SaveCommand(importantCmd)
-	storage.SaveCommand(recentCmd)
+	if err := storage.SaveCommand(oldCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(importantCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(recentCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Test manual cleanup
 	err := manager.optimization.ApplyCleanupPolicy(policy)
@@ -256,7 +276,9 @@ func TestOptimizationEngine_OptimizeStorage(t *testing.T) {
 	// Add some test data
 	for i := 0; i < 5; i++ {
 		cmd := createTestCommand("test-"+string(rune(i)), "command", "/home/user", history.Bash)
-		storage.SaveCommand(cmd)
+		if err := storage.SaveCommand(cmd); err != nil {
+			t.Fatalf("SaveCommand failed: %v", err)
+		}
 	}
 
 	// Test optimization

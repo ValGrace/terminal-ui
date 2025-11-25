@@ -109,9 +109,15 @@ func TestSQLiteStorage_GetCommandsByDirectory(t *testing.T) {
 	cmd2 := createTestCommand("test-2", "pwd", "/home/user", history.Bash)
 	cmd3 := createTestCommand("test-3", "cd ..", "/tmp", history.Bash)
 
-	storage.SaveCommand(cmd1)
-	storage.SaveCommand(cmd2)
-	storage.SaveCommand(cmd3)
+	if err := storage.SaveCommand(cmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd3); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Test getting commands for specific directory
 	commands, err := storage.GetCommandsByDirectory("/home/user")
@@ -148,9 +154,15 @@ func TestSQLiteStorage_GetDirectoriesWithHistory(t *testing.T) {
 	cmd2 := createTestCommand("test-2", "pwd", "/tmp", history.Bash)
 	cmd3 := createTestCommand("test-3", "cd", "/var/log", history.Bash)
 
-	storage.SaveCommand(cmd1)
-	storage.SaveCommand(cmd2)
-	storage.SaveCommand(cmd3)
+	if err := storage.SaveCommand(cmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd3); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	directories, err := storage.GetDirectoriesWithHistory()
 	if err != nil {
@@ -185,10 +197,18 @@ func TestSQLiteStorage_SearchCommands(t *testing.T) {
 	cmd3 := createTestCommand("test-3", "ls -la", "/home/user/project", history.Bash)
 	cmd4 := createTestCommand("test-4", "git log", "/tmp", history.Bash)
 
-	storage.SaveCommand(cmd1)
-	storage.SaveCommand(cmd2)
-	storage.SaveCommand(cmd3)
-	storage.SaveCommand(cmd4)
+	if err := storage.SaveCommand(cmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd3); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd4); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Test search in specific directory
 	commands, err := storage.SearchCommands("git", "/home/user/project")
@@ -233,8 +253,12 @@ func TestSQLiteStorage_CleanupOldCommands(t *testing.T) {
 	recentCmd := createTestCommand("recent-1", "recent command", "/home/user", history.Bash)
 	recentCmd.Timestamp = now.AddDate(0, 0, -10) // 10 days ago
 
-	storage.SaveCommand(oldCmd)
-	storage.SaveCommand(recentCmd)
+	if err := storage.SaveCommand(oldCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(recentCmd); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Cleanup commands older than 30 days
 	err := storage.CleanupOldCommands(30)
@@ -309,9 +333,15 @@ func TestSQLiteStorage_GetDirectoryStats(t *testing.T) {
 	cmd2 := createTestCommand("test-2", "pwd", "/home/user", history.Bash)
 	cmd3 := createTestCommand("test-3", "cd", "/tmp", history.PowerShell)
 
-	storage.SaveCommand(cmd1)
-	storage.SaveCommand(cmd2)
-	storage.SaveCommand(cmd3)
+	if err := storage.SaveCommand(cmd1); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd2); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
+	if err := storage.SaveCommand(cmd3); err != nil {
+		t.Fatalf("SaveCommand failed: %v", err)
+	}
 
 	// Get directory stats
 	stats, err := storage.GetDirectoryStats()
@@ -346,10 +376,12 @@ func TestSQLiteStorage_ConcurrentAccess(t *testing.T) {
 	// Test concurrent writes
 	done := make(chan bool, 2)
 
+	errs := make(chan error, 20)
+
 	go func() {
 		for i := 0; i < 10; i++ {
 			cmd := createTestCommand("goroutine1-"+string(rune(i)), "command", "/home/user", history.Bash)
-			storage.SaveCommand(cmd)
+			errs <- storage.SaveCommand(cmd)
 		}
 		done <- true
 	}()
@@ -357,7 +389,7 @@ func TestSQLiteStorage_ConcurrentAccess(t *testing.T) {
 	go func() {
 		for i := 0; i < 10; i++ {
 			cmd := createTestCommand("goroutine2-"+string(rune(i)), "command", "/tmp", history.PowerShell)
-			storage.SaveCommand(cmd)
+			errs <- storage.SaveCommand(cmd)
 		}
 		done <- true
 	}()
@@ -365,6 +397,13 @@ func TestSQLiteStorage_ConcurrentAccess(t *testing.T) {
 	// Wait for both goroutines to complete
 	<-done
 	<-done
+
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("SaveCommand failed in goroutine: %v", err)
+		}
+	}
 
 	// Verify all commands were saved
 	homeCommands, err := storage.GetCommandsByDirectory("/home/user")
@@ -393,7 +432,9 @@ func TestSQLiteStorage_OptimizeDatabase(t *testing.T) {
 	// Add some commands
 	for i := 0; i < 5; i++ {
 		cmd := createTestCommand("test-"+string(rune(i)), "command", "/home/user", history.Bash)
-		storage.SaveCommand(cmd)
+		if err := storage.SaveCommand(cmd); err != nil {
+			t.Fatalf("SaveCommand failed: %v", err)
+		}
 	}
 
 	// Test database optimization
@@ -433,7 +474,9 @@ func TestSQLiteStorage_GetDatabaseSize(t *testing.T) {
 			"command with substantial content to ensure database growth "+string(rune(i)),
 			"/home/user/very/long/directory/path/to/ensure/growth",
 			history.Bash)
-		storage.SaveCommand(cmd)
+		if err := storage.SaveCommand(cmd); err != nil {
+			t.Fatalf("SaveCommand failed: %v", err)
+		}
 	}
 
 	// Force a checkpoint to ensure data is written to disk
