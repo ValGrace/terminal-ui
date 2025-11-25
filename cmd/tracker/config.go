@@ -215,8 +215,10 @@ func resetConfig() error {
 
 	fmt.Println("⚠ This will reset all configuration to default values.")
 	fmt.Print("Are you sure? (y/N): ")
-
-	response, _ := reader.ReadString('\n')
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response != "y" && response != "yes" {
@@ -303,7 +305,10 @@ func editConfigInteractive(cfg *config.Config) error {
 }
 
 func readLine(reader *bufio.Reader) string {
-	line, _ := reader.ReadString('\n')
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return ""
+	}
 	return strings.TrimSpace(line)
 }
 

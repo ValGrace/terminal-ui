@@ -337,6 +337,7 @@ func (s *SQLiteStorage) BatchSaveCommands(commands []history.CommandRecord) erro
 	// Ensure rollback is attempted if commit is not reached. Check the
 	// returned error and ignore ErrTxDone which indicates the transaction
 	// has already been committed or rolled back.
+	// defer tx.Rollback()
 	defer func() {
 		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
 			fmt.Printf("Warning: failed to rollback transaction: %v\n", err)

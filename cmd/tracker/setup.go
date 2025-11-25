@@ -393,7 +393,11 @@ func promptForAutoSetup() error {
 	fmt.Println("  3. Skip setup (configure later)")
 	fmt.Print("Choose an option (1/2/3): ")
 
-	response, _ := reader.ReadString('\n')
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		// treat read errors (including EOF) as empty response -> default
+		response = ""
+	}
 	response = strings.TrimSpace(response)
 
 	switch response {
@@ -535,7 +539,10 @@ func runInteractiveSetup() error {
 	}
 
 	fmt.Print("Is this correct? (Y/n): ")
-	response, _ := reader.ReadString('\n')
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response == "n" || response == "no" {
@@ -550,18 +557,21 @@ func runInteractiveSetup() error {
 
 	// Check if already installed
 	integrator := shell.NewIntegrator()
-	isInstalled, err := integrator.IsInstalled(shellType)
-	if err == nil && isInstalled {
-		fmt.Println("\n⚠ Command recording is already configured for this shell.")
-		fmt.Print("Do you want to reconfigure? (y/N): ")
-		response, _ = reader.ReadString('\n')
-		response = strings.TrimSpace(strings.ToLower(response))
+		isInstalled, err := integrator.IsInstalled(shellType)
+		if err == nil && isInstalled {
+			fmt.Println("\n⚠ Command recording is already configured for this shell.")
+			fmt.Print("Do you want to reconfigure? (y/N): ")
+			response, err = reader.ReadString('\n')
+			if err != nil {
+				response = ""
+			}
+			response = strings.TrimSpace(strings.ToLower(response))
 
-		if response != "y" && response != "yes" {
-			fmt.Println("Setup cancelled. Use 'tracker status' to check current configuration.")
-			return nil
+			if response != "y" && response != "yes" {
+				fmt.Println("Setup cancelled. Use 'tracker status' to check current configuration.")
+				return nil
+			}
 		}
-	}
 
 	// Load or create config
 	cfg, err := config.LoadConfig()
@@ -575,77 +585,98 @@ func runInteractiveSetup() error {
 	// Configure retention
 	fmt.Printf("Retention period: How long to keep command history\n")
 	fmt.Printf("Current: %d days\n", cfg.RetentionDays)
-	fmt.Print("Change retention period? (y/N): ")
-	response, _ = reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
-
-	if response == "y" || response == "yes" {
-		for {
-			fmt.Print("Enter retention period in days (1-365, default 90): ")
-			var days int
-			_, err := fmt.Fscanf(reader, "%d\n", &days)
-			if err != nil {
-				reader.ReadString('\n') // Clear buffer
-				fmt.Println("Invalid input. Please enter a number.")
-				continue
-			}
-			if days > 0 && days <= 365 {
-				cfg.RetentionDays = days
-				break
-			}
-			fmt.Println("Please enter a value between 1 and 365.")
+		fmt.Print("Change retention period? (y/N): ")
+		response, err = reader.ReadString('\n')
+		if err != nil {
+			response = ""
 		}
-	}
+		response = strings.TrimSpace(strings.ToLower(response))
+
+		if response == "y" || response == "yes" {
+			for {
+				fmt.Print("Enter retention period in days (1-365, default 90): ")
+				var days int
+				_, err := fmt.Fscanf(reader, "%d\n", &days)
+				if err != nil {
+					// clear remainder of line
+					if _, err := reader.ReadString('\n'); err != nil {
+						// ignore error while clearing buffer
+					}
+					fmt.Println("Invalid input. Please enter a number.")
+					continue
+				}
+				if days > 0 && days <= 365 {
+					cfg.RetentionDays = days
+					break
+				}
+				fmt.Println("Please enter a value between 1 and 365.")
+			}
+		}
 
 	// Configure max commands
 	fmt.Printf("\nMax commands per directory: Limit history size per directory\n")
 	fmt.Printf("Current: %d commands\n", cfg.MaxCommands)
-	fmt.Print("Change max commands? (y/N): ")
-	response, _ = reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
-
-	if response == "y" || response == "yes" {
-		for {
-			fmt.Print("Enter max commands per directory (100-100000, default 10000): ")
-			var max int
-			_, err := fmt.Fscanf(reader, "%d\n", &max)
-			if err != nil {
-				reader.ReadString('\n') // Clear buffer
-				fmt.Println("Invalid input. Please enter a number.")
-				continue
-			}
-			if max >= 100 && max <= 100000 {
-				cfg.MaxCommands = max
-				break
-			}
-			fmt.Println("Please enter a value between 100 and 100000.")
+		fmt.Print("Change max commands? (y/N): ")
+		response, err = reader.ReadString('\n')
+		if err != nil {
+			response = ""
 		}
-	}
+		response = strings.TrimSpace(strings.ToLower(response))
+
+		if response == "y" || response == "yes" {
+			for {
+				fmt.Print("Enter max commands per directory (100-100000, default 10000): ")
+				var max int
+				_, err := fmt.Fscanf(reader, "%d\n", &max)
+				if err != nil {
+					// clear remainder of line
+					if _, err := reader.ReadString('\n'); err != nil {
+						// ignore error while clearing buffer
+					}
+					fmt.Println("Invalid input. Please enter a number.")
+					continue
+				}
+				if max >= 100 && max <= 100000 {
+					cfg.MaxCommands = max
+					break
+				}
+				fmt.Println("Please enter a value between 100 and 100000.")
+			}
+		}
 
 	// Configure auto cleanup
 	fmt.Printf("\nAuto cleanup: Automatically remove old commands based on retention policy\n")
 	fmt.Printf("Current: %v\n", cfg.AutoCleanup)
 	fmt.Print("Enable auto cleanup? (Y/n): ")
-	response, _ = reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
+		response, err = reader.ReadString('\n')
+		if err != nil {
+			response = ""
+		}
+		response = strings.TrimSpace(strings.ToLower(response))
 
-	if response == "n" || response == "no" {
-		cfg.AutoCleanup = false
-	} else {
-		cfg.AutoCleanup = true
-	}
+		if response == "n" || response == "no" {
+			cfg.AutoCleanup = false
+		} else {
+			cfg.AutoCleanup = true
+		}
 
 	// Configure exclude patterns
 	fmt.Printf("\nExclude patterns: Commands to exclude from recording\n")
 	fmt.Printf("Current patterns: %v\n", cfg.ExcludePatterns)
 	fmt.Print("Modify exclude patterns? (y/N): ")
-	response, _ = reader.ReadString('\n')
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response == "y" || response == "yes" {
 		fmt.Println("Enter commands to exclude (comma-separated, or press Enter to keep current):")
 		fmt.Print("> ")
-		patterns, _ := reader.ReadString('\n')
+		patterns, err := reader.ReadString('\n')
+		if err != nil {
+			patterns = ""
+		}
 		patterns = strings.TrimSpace(patterns)
 		if patterns != "" {
 			cfg.ExcludePatterns = strings.Split(patterns, ",")
@@ -726,7 +757,10 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 
 	// Confirm uninstall
 	fmt.Print("Are you sure you want to uninstall? (y/N): ")
-	response, _ := reader.ReadString('\n')
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response != "y" && response != "yes" {
@@ -780,7 +814,10 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	// Ask about deleting history
 	fmt.Println("\n3. Command history database...")
 	fmt.Print("   Delete command history database? (y/N): ")
-	response, _ = reader.ReadString('\n')
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response == "y" || response == "yes" {
