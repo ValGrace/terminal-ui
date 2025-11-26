@@ -15,8 +15,13 @@ func TestSetupWorkflow(t *testing.T) {
 
 	// Set up test environment
 	oldHome := os.Getenv("HOME")
+	oldUserProfile := os.Getenv("USERPROFILE")
 	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
+	os.Setenv("USERPROFILE", tmpDir)
+	defer func() {
+		os.Setenv("HOME", oldHome)
+		os.Setenv("USERPROFILE", oldUserProfile)
+	}()
 
 	t.Run("DefaultConfigCreation", func(t *testing.T) {
 		cfg := config.DefaultConfig()
@@ -95,8 +100,13 @@ func TestConfigPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	oldHome := os.Getenv("HOME")
+	oldUserProfile := os.Getenv("USERPROFILE")
 	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
+	os.Setenv("USERPROFILE", tmpDir)
+	defer func() {
+		os.Setenv("HOME", oldHome)
+		os.Setenv("USERPROFILE", oldUserProfile)
+	}()
 
 	configPath := config.GetConfigPath()
 
@@ -110,8 +120,13 @@ func TestUninstallCleanup(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	oldHome := os.Getenv("HOME")
+	oldUserProfile := os.Getenv("USERPROFILE")
 	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
+	os.Setenv("USERPROFILE", tmpDir)
+	defer func() {
+		os.Setenv("HOME", oldHome)
+		os.Setenv("USERPROFILE", oldUserProfile)
+	}()
 
 	// Create config
 	cfg := config.DefaultConfig()

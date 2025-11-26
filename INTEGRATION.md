@@ -285,7 +285,7 @@ jobs:
       
       - name: Install Tracker
         run: |
-          go install command-history-tracker/cmd/tracker@latest
+          go install github.com/ValGrace/command-history-tracker/cmd/tracker@latest
           tracker setup --ci-mode
       
       - name: Build
@@ -315,7 +315,7 @@ stages:
   - test
 
 before_script:
-  - go install command-history-tracker/cmd/tracker@latest
+  - go install github.com/ValGrace/command-history-tracker/cmd/tracker@latest
   - tracker setup --ci-mode
 
 build:
@@ -354,8 +354,8 @@ import (
     "fmt"
     "log"
     
-    "command-history-tracker/internal/executor"
-    "command-history-tracker/internal/storage"
+    "github.com/ValGrace/command-history-tracker/internal/executor"
+    "github.com/ValGrace/command-history-tracker/internal/storage"
 )
 
 func main() {
@@ -417,7 +417,7 @@ package main
 import (
     "fmt"
     
-    "command-history-tracker/internal/executor"
+    "github.com/ValGrace/command-history-tracker/internal/executor"
 )
 
 func main() {
@@ -462,7 +462,7 @@ import (
     "fmt"
     "regexp"
     
-    "command-history-tracker/internal/executor"
+    "github.com/ValGrace/command-history-tracker/internal/executor"
     "github.com/ValGrace/command-history-tracker/pkg/history"
 )
 
@@ -544,7 +544,7 @@ import (
     "log"
     "sort"
     
-    "command-history-tracker/internal/storage"
+    "github.com/ValGrace/command-history-tracker/internal/storage"
 )
 
 func main() {
@@ -602,7 +602,7 @@ import (
     "sort"
     "strings"
     
-    "command-history-tracker/internal/storage"
+    "github.com/ValGrace/command-history-tracker/internal/storage"
 )
 
 func main() {
@@ -673,7 +673,7 @@ import (
     "log"
     "strings"
     
-    "command-history-tracker/internal/storage"
+    "github.com/ValGrace/command-history-tracker/internal/storage"
 )
 
 func suggestCommands(currentDir string, prefix string) ([]string, error) {
