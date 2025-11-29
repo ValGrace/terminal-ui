@@ -2,9 +2,6 @@ package interceptor
 
 import (
 	"bufio"
-	"github.com/ValGrace/command-history-tracker/internal/config"
-	"github.com/ValGrace/command-history-tracker/pkg/history"
-	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 )
 
 // UnixCapture provides Unix-specific command capture functionality
@@ -76,8 +77,8 @@ func (u *UnixCapture) detectUnixShell() (history.ShellType, error) {
 	}
 
 	// If environment-based checks failed, try to infer from process info
-	if info, err := u.getProcessInfo(); err == nil && info != nil && info.Executable != "" {
-		execName := strings.ToLower(filepath.Base(info.Executable))
+	if info, err := u.getProcessInfo(); err == nil && info != nil && info.Platform != "" {
+		execName := strings.ToLower(filepath.Base(info.Platform))
 		if strings.Contains(execName, "zsh") {
 			return history.Zsh, nil
 		}
@@ -670,10 +671,11 @@ type UnixShellDetails struct {
 
 // UnixProcessInfo contains Unix-specific process information
 type UnixProcessInfo struct {
-	PID  int `json:"pid"`
-	PPID int `json:"ppid"`
-	UID  int `json:"uid"`
-	GID  int `json:"gid"`
-	PGID int `json:"pgid,omitempty"`
-	SID  int `json:"sid,omitempty"`
+	PID      int    `json:"pid"`
+	PPID     int    `json:"ppid"`
+	UID      int    `json:"uid"`
+	GID      int    `json:"gid"`
+	PGID     int    `json:"pgid,omitempty"`
+	SID      int    `json:"sid,omitempty"`
+	Platform string `json:"platform"`
 }
