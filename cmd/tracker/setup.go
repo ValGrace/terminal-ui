@@ -61,15 +61,83 @@ This checks shell integration, configuration validity, and storage accessibility
 	RunE: runVerify,
 }
 
+var manualCmd = &cobra.Command{
+	Use:   "manual",
+	Short: "Show manual installation instructions",
+	Long: `Display manual installation instructions for setting up shell integration.
+Use this if automatic setup fails or if you prefer to configure manually.`,
+	RunE: runManual,
+}
+
 func init() {
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(cleanupCmd)
 	rootCmd.AddCommand(uninstallCmd)
 	rootCmd.AddCommand(verifyCmd)
+	setupCmd.AddCommand(manualCmd)
 
 	setupCmd.Flags().BoolVarP(&setupInteractive, "interactive", "i", false, "Run interactive setup wizard")
 	setupCmd.Flags().BoolVarP(&setupForce, "force", "f", false, "Force setup even if already configured")
+}
+
+func runManual(cmd *cobra.Command, args []string) error {
+	fmt.Println("=== Manual Installation Instructions ===")
+	fmt.Println()
+
+	// Detect shell
+	detector := shell.NewDetector()
+	shellType, err := detector.DetectShell()
+	if err != nil {
+		fmt.Printf("Could not detect shell: %v\n", err)
+		fmt.Println("Showing instructions for all supported shells...")
+		shellType = history.Unknown
+	} else {
+		fmt.Printf("Detected shell: %s\n\n", shellType)
+	}
+
+	// Get integration script
+	integrator := shell.NewIntegrator()
+	
+	if shellType != history.Unknown {
+		// Show instructions for detected shell
+		showManualInstructionsForShell(shellType, integrator)
+	} else {
+		// Show instructions for all shells
+		platform := shell.NewPlatformAbstraction()
+		for _, shell := range platform.GetSupportedShells() {
+			showManualInstructionsForShell(shell, integrator)
+			fmt.Println()
+		}
+	}
+
+	return nil
+}
+
+func showManualInstructionsForShell(shellType history.ShellType, integrator *shell.Integrator) {
+	platform := shell.NewPlatformAbstraction()
+	configPath, err := platform.GetShellConfigPath(shellType)
+	if err != nil {
+		fmt.Printf("Could not determine config path for %s: %v\n", shellType, err)
+		return
+	}
+
+	script, err := integrator.GetIntegrationScript(shellType)
+	if err != nil {
+		fmt.Printf("Could not get integration script for %s: %v\n", shellType, err)
+		return
+	}
+
+	fmt.Printf("--- %s ---\n", shellType)
+	fmt.Printf("Configuration file: %s\n\n", configPath)
+	fmt.Println("Add the following to your shell configuration file:")
+	fmt.Println()
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println(script)
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println()
+	fmt.Println("After adding the script, restart your shell or run:")
+	printShellRestartInstructions(shellType)
 }
 
 // autoSetup performs automatic setup without user interaction
@@ -132,6 +200,11 @@ func autoSetup() error {
 		fmt.Printf("Warning: Could not determine shell config path: %v\n", err)
 	} else {
 		fmt.Printf("\nShell configuration file: %s\n", configPath)
+		
+		// Ensure shell config file exists
+		if err := ensureShellConfigExists(shellType, configPath); err != nil {
+			fmt.Printf("Warning: Could not create shell config file: %v\n", err)
+		}
 	}
 
 	// Create backup of shell config before modification
@@ -179,6 +252,44 @@ func autoSetup() error {
 	fmt.Println("  - Run 'tracker verify' to check installation at any time")
 	fmt.Println("  - Run 'tracker uninstall' to remove the tracker")
 
+	return nil
+}
+
+// ensureShellConfigExists creates the shell configuration file if it doesn't exist
+func ensureShellConfigExists(shellType history.ShellType, configPath string) error {
+	// Check if file already exists
+	if _, err := os.Stat(configPath); err == nil {
+		return nil // File exists
+	} else if !os.IsNotExist(err) {
+		return err // Some other error
+	}
+
+	// Create directory if needed
+	configDir := filepath.Dir(configPath)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	// Create empty config file with appropriate header comment
+	var header string
+	switch shellType {
+	case history.PowerShell:
+		header = "# PowerShell Profile\n"
+	case history.Bash:
+		header = "# Bash Configuration\n"
+	case history.Zsh:
+		header = "# Zsh Configuration\n"
+	case history.Cmd:
+		header = "REM Command Prompt Configuration\n"
+	default:
+		header = "# Shell Configuration\n"
+	}
+
+	if err := os.WriteFile(configPath, []byte(header), 0644); err != nil {
+		return fmt.Errorf("failed to create config file: %w", err)
+	}
+
+	fmt.Printf("✓ Created shell config file: %s\n", configPath)
 	return nil
 }
 
@@ -482,6 +593,11 @@ func backupShellConfig(shellType history.ShellType) error {
 		return nil // No file to backup
 	}
 
+	// Check write permissions before attempting backup
+	if err := checkWritePermissions(configPath); err != nil {
+		return fmt.Errorf("insufficient permissions to backup config file: %w", err)
+	}
+
 	// Create backup with timestamp
 	backupPath := configPath + ".backup"
 
@@ -497,6 +613,35 @@ func backupShellConfig(shellType history.ShellType) error {
 	}
 
 	fmt.Printf("Created backup: %s\n", backupPath)
+	return nil
+}
+
+// checkWritePermissions checks if we have write permissions for a file or its directory
+func checkWritePermissions(path string) error {
+	// Check if file exists
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// File doesn't exist, check directory permissions
+			dir := filepath.Dir(path)
+			dirInfo, dirErr := os.Stat(dir)
+			if dirErr != nil {
+				return fmt.Errorf("cannot access directory: %w", dirErr)
+			}
+			// Check if directory is writable
+			if dirInfo.Mode().Perm()&0200 == 0 {
+				return fmt.Errorf("directory is not writable")
+			}
+			return nil
+		}
+		return err
+	}
+
+	// File exists, check if it's writable
+	if info.Mode().Perm()&0200 == 0 {
+		return fmt.Errorf("file is not writable")
+	}
+
 	return nil
 }
 
@@ -531,14 +676,19 @@ func runInteractiveSetup() error {
 		return fmt.Errorf("failed to detect shell: %w", err)
 	}
 
-	fmt.Printf("Detected shell: %s\n", shellType)
+	fmt.Printf("\nDetected shell: %s\n", shellType)
 
 	// Check if shell is supported
 	if !detector.IsShellSupported(shellType) {
-		fmt.Printf("Warning: Shell %s may not be fully supported on this platform.\n", shellType)
+		fmt.Printf("⚠ Warning: Shell %s may not be fully supported on this platform.\n", shellType)
+		fmt.Println("\nSupported shells on your platform:")
+		platform := shell.NewPlatformAbstraction()
+		for _, s := range platform.GetSupportedShells() {
+			fmt.Printf("  - %s\n", s)
+		}
 	}
 
-	fmt.Print("Is this correct? (Y/n): ")
+	fmt.Print("\nIs this correct? (Y/n): ")
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		response = ""
@@ -553,6 +703,39 @@ func runInteractiveSetup() error {
 		}
 		fmt.Println("\nPlease set your SHELL environment variable or run the tracker from your preferred shell.")
 		return nil
+	}
+
+	// Check shell config file accessibility
+	platform := shell.NewPlatformAbstraction()
+	configPath, err := platform.GetShellConfigPath(shellType)
+	if err != nil {
+		fmt.Printf("\n⚠ Warning: Could not determine shell config path: %v\n", err)
+		fmt.Print("Continue anyway? (y/N): ")
+		response, err = reader.ReadString('\n')
+		if err != nil {
+			response = ""
+		}
+		response = strings.TrimSpace(strings.ToLower(response))
+		if response != "y" && response != "yes" {
+			return fmt.Errorf("setup cancelled")
+		}
+	} else {
+		fmt.Printf("Shell config file: %s\n", configPath)
+		
+		// Check write permissions
+		if err := checkWritePermissions(configPath); err != nil {
+			fmt.Printf("\n⚠ Warning: %v\n", err)
+			fmt.Println("You may need to run with elevated permissions or fix file permissions.")
+			fmt.Print("Continue anyway? (y/N): ")
+			response, err = reader.ReadString('\n')
+			if err != nil {
+				response = ""
+			}
+			response = strings.TrimSpace(strings.ToLower(response))
+			if response != "y" && response != "yes" {
+				return fmt.Errorf("setup cancelled due to permission issues")
+			}
+		}
 	}
 
 	// Check if already installed
@@ -708,11 +891,34 @@ func runInteractiveSetup() error {
 
 	fmt.Println("\n=== Setup Complete ===")
 	fmt.Println("\n✓ Command recording is now configured!")
+	
+	// Offer to verify installation
+	fmt.Print("\nWould you like to verify the installation now? (Y/n): ")
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
+	
+	if response != "n" && response != "no" {
+		fmt.Println("\nRunning verification...")
+		if err := verifySetup(shellType); err != nil {
+			fmt.Printf("⚠ Verification found issues: %v\n", err)
+			fmt.Println("You may need to manually check your shell configuration.")
+		} else {
+			fmt.Println("✓ Verification passed!")
+		}
+	}
+	
 	fmt.Println("\nNext steps:")
 	printShellRestartInstructions(shellType)
-	fmt.Println("  2. Verify setup with: tracker status")
+	fmt.Println("  2. Verify setup with: tracker verify")
 	fmt.Println("  3. Browse history with: tracker browse")
-	fmt.Println("\nTip: Your shell configuration has been backed up with a .backup extension")
+	fmt.Println("  4. Check status with: tracker status")
+	fmt.Println("\nTips:")
+	fmt.Println("  - Your shell configuration has been backed up with a .backup extension")
+	fmt.Println("  - Run 'tracker uninstall' if you want to remove the tracker")
+	fmt.Println("  - Run 'tracker setup --help' for more setup options")
 
 	return nil
 }
@@ -961,6 +1167,23 @@ func cleanupAllData() error {
 			backupPath := configPath + ".backup"
 			if err := os.Remove(backupPath); err == nil {
 				deletedFiles = append(deletedFiles, backupPath)
+			}
+		}
+	}
+
+	// Clean up any temporary files
+	tempPatterns := []string{
+		filepath.Join(os.TempDir(), "tracker-*"),
+		filepath.Join(os.TempDir(), "command-history-*"),
+	}
+
+	for _, pattern := range tempPatterns {
+		matches, err := filepath.Glob(pattern)
+		if err == nil {
+			for _, match := range matches {
+				if err := os.RemoveAll(match); err == nil {
+					deletedFiles = append(deletedFiles, match)
+				}
 			}
 		}
 	}

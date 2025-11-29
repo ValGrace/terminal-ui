@@ -144,7 +144,11 @@
 
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 4.3 Add cross-directory navigation
+  - [x] 4.3 Add cross-directory navigation
+
+
+
+
 
 
 
@@ -169,7 +173,11 @@
 
 
 
-  - [ ] 4.4 Implement search and filtering
+  - [x] 4.4 Implement search and filtering
+
+
+
+
 
 
 
@@ -179,7 +187,12 @@
     - Implement shell type filtering
     - _Requirements: 2.2_
 
-  - [ ] 4.5 Write browser UI tests
+  - [x] 4.5 Write browser UI tests
+
+
+
+
+
 
     - Test keyboard navigation functionality
     - Verify command display and selection
@@ -252,7 +265,12 @@
     - Add 'status' command for system information
     - _Requirements: 4.4, 5.3_
 
-  - [ ] 6.4 Write CLI integration tests
+  - [x] 6.4 Write CLI integration tests
+
+
+
+
+
 
 
 
@@ -283,7 +301,16 @@
     - _Requirements: 4.3, 4.5_
 
 
-  - [ ] 7.3 Implement auto-setup and shell integration
+  - [x] 7.3 Implement auto-setup and shell integration
+
+
+
+
+
+
+
+
+
 
 
 

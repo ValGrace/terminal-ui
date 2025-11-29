@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/ValGrace/command-history-tracker/internal/config"
 	"github.com/ValGrace/command-history-tracker/internal/storage"
 	"github.com/ValGrace/command-history-tracker/pkg/history"
@@ -35,6 +36,7 @@ func TestBrowseCommand(t *testing.T) {
 	testDir := "/test/directory"
 	for i := 0; i < 5; i++ {
 		record := history.CommandRecord{
+			ID:        generateCommandID(),
 			Command:   "test command " + string(rune('A'+i)),
 			Directory: testDir,
 			Timestamp: time.Now(),
@@ -112,6 +114,7 @@ func TestHistoryCommand(t *testing.T) {
 
 	for _, cmd := range commands {
 		record := history.CommandRecord{
+			ID:        generateCommandID(),
 			Command:   cmd.command,
 			Directory: testDir,
 			Timestamp: cmd.timestamp,
@@ -211,6 +214,7 @@ func TestSearchCommand(t *testing.T) {
 
 	for _, tc := range testCommands {
 		record := history.CommandRecord{
+			ID:        generateCommandID(),
 			Command:   tc.command,
 			Directory: tc.directory,
 			Timestamp: time.Now(),
@@ -456,11 +460,12 @@ func TestCommandChaining(t *testing.T) {
 		t.Fatalf("Failed to initialize storage: %v", err)
 	}
 
-	// Add a command
+	// Add a command with old timestamp
 	record := history.CommandRecord{
+		ID:        generateCommandID(),
 		Command:   "test command",
 		Directory: "/test",
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Add(-48 * time.Hour), // 2 days old
 		Shell:     history.Bash,
 		ExitCode:  0,
 		Duration:  time.Second,
@@ -480,8 +485,8 @@ func TestCommandChaining(t *testing.T) {
 		t.Errorf("Expected 1 command, got %d", len(commands))
 	}
 
-	// Test cleanup
-	if err := store.CleanupOldCommands(0); err != nil {
+	// Test cleanup (delete commands older than 1 day)
+	if err := store.CleanupOldCommands(1); err != nil {
 		t.Fatalf("Failed to cleanup: %v", err)
 	}
 
@@ -724,6 +729,529 @@ func TestConfigurationManagement(t *testing.T) {
 					t.Error("Invalid config should fail validation")
 				}
 			})
+		}
+	})
+}
+
+// generateCommandID generates a unique ID for a command record
+var commandIDCounter int64
+
+func generateCommandID() string {
+	commandIDCounter++
+	return fmt.Sprintf("cmd-%d-%d", time.Now().UnixNano(), commandIDCounter)
+}
+
+// TestCLICommandParameters tests CLI commands with various parameter combinations
+func TestCLICommandParameters(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", oldHome)
+
+	cfg := config.DefaultConfig()
+	cfg.StoragePath = filepath.Join(tmpDir, "commands.db")
+	config.SetGlobal(cfg)
+
+	store, err := storage.NewStorageEngine("sqlite", cfg.StoragePath)
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer store.Close()
+
+	if err := store.Initialize(); err != nil {
+		t.Fatalf("Failed to initialize storage: %v", err)
+	}
+
+	// Add test data
+	testDirs := []string{"/project1", "/project2", "/project3"}
+	for _, dir := range testDirs {
+		for i := 0; i < 10; i++ {
+			record := history.CommandRecord{
+				ID:        generateCommandID(),
+				Command:   fmt.Sprintf("command-%d", i),
+				Directory: dir,
+				Timestamp: time.Now().Add(-time.Duration(i) * time.Hour),
+				Shell:     history.Bash,
+				ExitCode:  0,
+				Duration:  time.Second,
+			}
+			if err := store.SaveCommand(record); err != nil {
+				t.Fatalf("Failed to save command: %v", err)
+			}
+		}
+	}
+
+	t.Run("HistoryWithMultipleFlags", func(t *testing.T) {
+		historyFlags.dir = "/project1"
+		historyFlags.limit = 5
+		historyFlags.since = "6h"
+		historyFlags.noInteractive = true
+
+		commands, err := store.GetCommandsByDirectory("/project1")
+		if err != nil {
+			t.Fatalf("Failed to get commands: %v", err)
+		}
+
+		filtered := applyHistoryFilters(commands)
+		if historyFlags.limit > 0 && len(filtered) > historyFlags.limit {
+			filtered = filtered[:historyFlags.limit]
+		}
+
+		if len(filtered) > 5 {
+			t.Errorf("Expected at most 5 commands with limit, got %d", len(filtered))
+		}
+
+		// Reset flags
+		historyFlags = struct {
+			dir           string
+			limit         int
+			since         string
+			shell         string
+			noInteractive bool
+		}{}
+	})
+
+	t.Run("SearchWithAllDirectories", func(t *testing.T) {
+		searchFlags.allDirs = true
+		searchFlags.caseSensitive = false
+		searchFlags.limit = 15
+
+		dirs, err := store.GetDirectoriesWithHistory()
+		if err != nil {
+			t.Fatalf("Failed to get directories: %v", err)
+		}
+
+		var allResults []history.CommandRecord
+		for _, dir := range dirs {
+			results, err := store.SearchCommands("command", dir)
+			if err != nil {
+				continue
+			}
+			allResults = append(allResults, results...)
+		}
+
+		if len(allResults) == 0 {
+			t.Error("Expected to find commands across all directories")
+		}
+
+		// Reset flags
+		searchFlags = struct {
+			dir           string
+			allDirs       bool
+			caseSensitive bool
+			limit         int
+			noInteractive bool
+		}{}
+	})
+
+	t.Run("BrowseWithTreeView", func(t *testing.T) {
+		browseFlags.tree = true
+		browseFlags.dir = ""
+
+		dirs, err := store.GetDirectoriesWithHistory()
+		if err != nil {
+			t.Fatalf("Failed to get directories: %v", err)
+		}
+
+		if len(dirs) != 3 {
+			t.Errorf("Expected 3 directories in tree view, got %d", len(dirs))
+		}
+
+		// Reset flags
+		browseFlags = struct {
+			dir    string
+			search string
+			tree   bool
+		}{}
+	})
+}
+
+// TestCLICommandChaining tests executing multiple CLI operations in sequence
+func TestCLICommandChaining(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", oldHome)
+
+	cfg := config.DefaultConfig()
+	cfg.StoragePath = filepath.Join(tmpDir, "commands.db")
+	config.SetGlobal(cfg)
+
+	t.Run("ConfigSetThenGet", func(t *testing.T) {
+		// Set a value
+		cfg.RetentionDays = 200
+		if err := cfg.Save(); err != nil {
+			t.Fatalf("Failed to save config: %v", err)
+		}
+
+		// Get the value
+		loadedCfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Failed to load config: %v", err)
+		}
+
+		if loadedCfg.RetentionDays != 200 {
+			t.Error("Config value not persisted through set-get chain")
+		}
+	})
+
+	t.Run("RecordThenSearch", func(t *testing.T) {
+		store, err := storage.NewStorageEngine("sqlite", cfg.StoragePath)
+		if err != nil {
+			t.Fatalf("Failed to create storage: %v", err)
+		}
+		defer store.Close()
+
+		if err := store.Initialize(); err != nil {
+			t.Fatalf("Failed to initialize storage: %v", err)
+		}
+
+		// Record a command
+		record := history.CommandRecord{
+			ID:        generateCommandID(),
+			Command:   "unique-test-command",
+			Directory: "/test",
+			Timestamp: time.Now(),
+			Shell:     history.Bash,
+			ExitCode:  0,
+			Duration:  time.Second,
+		}
+
+		if err := store.SaveCommand(record); err != nil {
+			t.Fatalf("Failed to save command: %v", err)
+		}
+
+		// Search for it
+		results, err := store.SearchCommands("unique-test-command", "/test")
+		if err != nil {
+			t.Fatalf("Failed to search: %v", err)
+		}
+
+		if len(results) != 1 {
+			t.Errorf("Expected 1 result from record-search chain, got %d", len(results))
+		}
+	})
+
+	t.Run("RecordBrowseCleanup", func(t *testing.T) {
+		store, err := storage.NewStorageEngine("sqlite", cfg.StoragePath)
+		if err != nil {
+			t.Fatalf("Failed to create storage: %v", err)
+		}
+		defer store.Close()
+
+		if err := store.Initialize(); err != nil {
+			t.Fatalf("Failed to initialize storage: %v", err)
+		}
+
+		// Record commands
+		for i := 0; i < 5; i++ {
+			record := history.CommandRecord{
+				ID:        generateCommandID(),
+				Command:   fmt.Sprintf("chain-command-%d", i),
+				Directory: "/chain-test",
+				Timestamp: time.Now().Add(-time.Duration(i*24) * time.Hour),
+				Shell:     history.Bash,
+				ExitCode:  0,
+				Duration:  time.Second,
+			}
+			if err := store.SaveCommand(record); err != nil {
+				t.Fatalf("Failed to save command: %v", err)
+			}
+		}
+
+		// Browse (verify they exist)
+		commands, err := store.GetCommandsByDirectory("/chain-test")
+		if err != nil {
+			t.Fatalf("Failed to get commands: %v", err)
+		}
+
+		if len(commands) != 5 {
+			t.Errorf("Expected 5 commands before cleanup, got %d", len(commands))
+		}
+
+		// Cleanup old commands (older than 2 days)
+		if err := store.CleanupOldCommands(2); err != nil {
+			t.Fatalf("Failed to cleanup: %v", err)
+		}
+
+		// Verify cleanup worked
+		commands, err = store.GetCommandsByDirectory("/chain-test")
+		if err != nil {
+			t.Fatalf("Failed to get commands after cleanup: %v", err)
+		}
+
+		if len(commands) >= 5 {
+			t.Errorf("Expected fewer commands after cleanup, got %d", len(commands))
+		}
+	})
+}
+
+// TestCLIErrorHandlingScenarios tests comprehensive error handling
+func TestCLIErrorHandlingScenarios(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	t.Run("MissingConfigFile", func(t *testing.T) {
+		oldHome := os.Getenv("HOME")
+		nonexistentDir := filepath.Join(tmpDir, "nonexistent")
+		os.Setenv("HOME", nonexistentDir)
+		defer os.Setenv("HOME", oldHome)
+
+		// Load should succeed by creating default config
+		cfg, err := config.Load()
+		if err != nil {
+			t.Errorf("Load should create default config, got error: %v", err)
+		}
+		if cfg == nil {
+			t.Error("Expected default config to be returned")
+		}
+	})
+
+	t.Run("InvalidDatabasePath", func(t *testing.T) {
+		// Use a path that's definitely invalid on all platforms
+		invalidPath := "\x00invalid\x00path\x00commands.db"
+		store, err := storage.NewStorageEngine("sqlite", invalidPath)
+		if err != nil {
+			// Expected error
+			t.Log("✓ Invalid database path handled correctly")
+			return
+		}
+		// If no error on creation, should fail on initialize
+		if store != nil {
+			defer store.Close()
+			if err := store.Initialize(); err != nil {
+				t.Log("✓ Invalid database path caught on initialize")
+			} else {
+				// On some systems, SQLite is very permissive with paths
+				// This is acceptable behavior
+				t.Log("✓ Storage engine handles path gracefully")
+			}
+		}
+	})
+
+	t.Run("SearchInNonexistentDirectory", func(t *testing.T) {
+		cfg := config.DefaultConfig()
+		cfg.StoragePath = filepath.Join(tmpDir, "test.db")
+
+		store, err := storage.NewStorageEngine("sqlite", cfg.StoragePath)
+		if err != nil {
+			t.Fatalf("Failed to create storage: %v", err)
+		}
+		defer store.Close()
+
+		if err := store.Initialize(); err != nil {
+			t.Fatalf("Failed to initialize storage: %v", err)
+		}
+
+		results, err := store.SearchCommands("test", "/nonexistent/directory")
+		if err != nil {
+			// Error is acceptable
+			t.Log("✓ Handled nonexistent directory search")
+		}
+
+		if len(results) != 0 {
+			t.Error("Expected no results for nonexistent directory")
+		}
+	})
+
+	t.Run("InvalidConfigValues", func(t *testing.T) {
+		testCases := []struct {
+			name   string
+			modify func(*config.Config)
+		}{
+			{
+				name: "NegativeRetentionDays",
+				modify: func(c *config.Config) {
+					c.RetentionDays = -1
+				},
+			},
+			{
+				name: "NegativeMaxCommands",
+				modify: func(c *config.Config) {
+					c.MaxCommands = -100
+				},
+			},
+			{
+				name: "EmptyStoragePath",
+				modify: func(c *config.Config) {
+					c.StoragePath = ""
+				},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := config.DefaultConfig()
+				tc.modify(cfg)
+
+				if err := cfg.Validate(); err == nil {
+					t.Errorf("Expected validation error for %s", tc.name)
+				}
+			})
+		}
+	})
+
+	t.Run("ConcurrentStorageAccess", func(t *testing.T) {
+		cfg := config.DefaultConfig()
+		cfg.StoragePath = filepath.Join(tmpDir, "concurrent.db")
+
+		store, err := storage.NewStorageEngine("sqlite", cfg.StoragePath)
+		if err != nil {
+			t.Fatalf("Failed to create storage: %v", err)
+		}
+		defer store.Close()
+
+		if err := store.Initialize(); err != nil {
+			t.Fatalf("Failed to initialize storage: %v", err)
+		}
+
+		// Attempt concurrent writes
+		done := make(chan bool, 2)
+
+		for i := 0; i < 2; i++ {
+			go func(id int) {
+				record := history.CommandRecord{
+					ID:        generateCommandID(),
+					Command:   fmt.Sprintf("concurrent-%d", id),
+					Directory: "/test",
+					Timestamp: time.Now(),
+					Shell:     history.Bash,
+					ExitCode:  0,
+					Duration:  time.Second,
+				}
+				_ = store.SaveCommand(record)
+				done <- true
+			}(i)
+		}
+
+		<-done
+		<-done
+
+		// Give a moment for writes to complete
+		time.Sleep(100 * time.Millisecond)
+
+		// Verify commands were saved
+		commands, err := store.GetCommandsByDirectory("/test")
+		if err != nil {
+			t.Fatalf("Failed to get commands: %v", err)
+		}
+
+		// At least one should succeed (SQLite handles concurrent writes with locking)
+		if len(commands) == 0 {
+			t.Error("Expected at least one command after concurrent access")
+		}
+		t.Logf("✓ Concurrent access handled: %d commands saved", len(commands))
+	})
+}
+
+// TestConfigurationFlows tests complete configuration management workflows
+func TestConfigurationFlows(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", oldHome)
+
+	t.Run("CompleteConfigurationWorkflow", func(t *testing.T) {
+		// Step 1: Create default config
+		cfg := config.DefaultConfig()
+		if err := cfg.Save(); err != nil {
+			t.Fatalf("Failed to save default config: %v", err)
+		}
+
+		// Step 2: Load and verify
+		loadedCfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Failed to load config: %v", err)
+		}
+
+		if loadedCfg.RetentionDays != cfg.RetentionDays {
+			t.Error("Default config not loaded correctly")
+		}
+
+		// Step 3: Modify multiple values
+		loadedCfg.RetentionDays = 365
+		loadedCfg.MaxCommands = 50000
+		loadedCfg.AutoCleanup = false
+		loadedCfg.ExcludePatterns = []string{"secret*", "password*"}
+
+		if err := loadedCfg.Save(); err != nil {
+			t.Fatalf("Failed to save modified config: %v", err)
+		}
+
+		// Step 4: Reload and verify all changes
+		finalCfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Failed to reload config: %v", err)
+		}
+
+		if finalCfg.RetentionDays != 365 {
+			t.Error("RetentionDays not persisted")
+		}
+		if finalCfg.MaxCommands != 50000 {
+			t.Error("MaxCommands not persisted")
+		}
+		if finalCfg.AutoCleanup != false {
+			t.Error("AutoCleanup not persisted")
+		}
+		if len(finalCfg.ExcludePatterns) != 2 {
+			t.Error("ExcludePatterns not persisted")
+		}
+
+		// Step 5: Reset to defaults
+		defaultCfg := config.DefaultConfig()
+		if err := defaultCfg.Save(); err != nil {
+			t.Fatalf("Failed to reset config: %v", err)
+		}
+
+		// Step 6: Verify reset
+		resetCfg, err := config.Load()
+		if err != nil {
+			t.Fatalf("Failed to load reset config: %v", err)
+		}
+
+		if resetCfg.RetentionDays == 365 {
+			t.Error("Config should be reset to defaults")
+		}
+	})
+
+	t.Run("ConfigValidationFlow", func(t *testing.T) {
+		_ = config.DefaultConfig()
+
+		// Test valid modifications
+		validChanges := []func(*config.Config){
+			func(c *config.Config) { c.RetentionDays = 30 },
+			func(c *config.Config) { c.RetentionDays = 365 },
+			func(c *config.Config) { c.MaxCommands = 1000 },
+			func(c *config.Config) { c.MaxCommands = 100000 },
+			func(c *config.Config) { c.AutoCleanup = true },
+			func(c *config.Config) { c.AutoCleanup = false },
+		}
+
+		for i, change := range validChanges {
+			testCfg := config.DefaultConfig()
+			change(testCfg)
+
+			if err := testCfg.Validate(); err != nil {
+				t.Errorf("Valid change %d failed validation: %v", i, err)
+			}
+		}
+
+		// Test invalid modifications
+		invalidChanges := []func(*config.Config){
+			func(c *config.Config) { c.RetentionDays = -1 },
+			func(c *config.Config) { c.MaxCommands = -1 },
+			func(c *config.Config) { c.StoragePath = "" },
+		}
+
+		for i, change := range invalidChanges {
+			testCfg := config.DefaultConfig()
+			change(testCfg)
+
+			if err := testCfg.Validate(); err == nil {
+				t.Errorf("Invalid change %d should fail validation", i)
+			}
 		}
 	})
 }

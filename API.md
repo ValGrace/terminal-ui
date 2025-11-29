@@ -79,6 +79,45 @@ type HistoryBrowser interface {
 }
 ```
 
+**Directory Navigation Features**:
+
+The browser supports hierarchical directory navigation with the following capabilities:
+
+- **Tree Organization**: Directories are organized hierarchically with automatic parent expansion
+- **Breadcrumb Navigation**: Visual breadcrumbs show the current path with navigation hints
+- **Keyboard Navigation**: 
+  - Arrow keys (↑/↓) for tree navigation
+  - Right arrow (→) to expand/collapse directories
+  - Left arrow (←) to navigate to parent directory
+  - Enter to select and view directory history
+- **Visual Indicators**: 
+  - Current directory highlighting
+  - Inactive directory dimming (for old/unused directories)
+  - Command count display per directory
+  - Indentation levels for hierarchy visualization
+- **Cross-Platform Support**: Works with both Unix-style (`/home/user`) and Windows-style (`C:\Users\test`) paths
+
+**Filtering Features**:
+
+The browser provides powerful filtering capabilities:
+
+- **Text Filtering**: Search commands by text pattern (case-insensitive substring matching)
+- **Date Range Filtering**: Filter by execution time with presets (Today, Yesterday, This Week, Last Week, This Month, Last Month)
+- **Shell Type Filtering**: Filter by shell type (PowerShell, Bash, Zsh, Cmd)
+- **Combined Filtering**: Apply multiple filters simultaneously with AND logic
+- **Real-time Updates**: Filters apply instantly as you type or change settings
+- **Filter State Management**: Filters persist across view changes and can be cleared with a single command
+
+**Filtering Keyboard Shortcuts**:
+- `/` - Enter search mode for text filtering
+- `f` - Toggle filter panel visibility
+- `d` - Toggle date filter (when filter panel is visible)
+- `s` - Cycle through shell type filters
+- `1-6` - Select date preset (when date filter is enabled)
+- `c` - Clear all active filters
+- `Escape` - Cancel search mode
+- `Enter` - Apply search filter
+
 ### CommandExecutor
 
 The `CommandExecutor` interface provides safe command execution with validation and confirmation.
@@ -171,7 +210,7 @@ const (
 
 ### SQLiteStorage
 
-SQLite-based implementation of the StorageEngine interface.
+SQLite-based implementation of the StorageEngine interface with advanced filtering capabilities.
 
 **Package**: `command-history-tracker/internal/storage`
 
@@ -180,13 +219,91 @@ SQLite-based implementation of the StorageEngine interface.
 func NewSQLiteStorage(storagePath string) (*SQLiteStorage, error)
 ```
 
-**Example**:
+**Extended Filtering Methods**:
+
+```go
+// GetCommandsByTimeRange retrieves commands within a specific time range
+func (s *SQLiteStorage) GetCommandsByTimeRange(startTime, endTime time.Time, dir string) ([]CommandRecord, error)
+
+// GetCommandsByShell retrieves commands filtered by shell type
+func (s *SQLiteStorage) GetCommandsByShell(shellType ShellType, dir string) ([]CommandRecord, error)
+
+// FilterCommands retrieves commands with multiple filter criteria
+func (s *SQLiteStorage) FilterCommands(filters CommandFilters) ([]CommandRecord, error)
+```
+
+**CommandFilters Structure**:
+
+```go
+type CommandFilters struct {
+    Directory string        // Filter by directory (empty for all directories)
+    Pattern   string        // Text pattern to search for
+    ShellType ShellType     // Filter by shell type (Unknown for all shells)
+    StartTime time.Time     // Start of time range (zero for no start limit)
+    EndTime   time.Time     // End of time range (zero for no end limit)
+    ExitCode  *int          // Filter by exit code (nil for all exit codes)
+    Limit     int           // Maximum number of results (0 for no limit)
+}
+```
+
+**Example - Basic Storage**:
 ```go
 store, err := storage.NewSQLiteStorage("~/.command-history-tracker")
 if err != nil {
     log.Fatal(err)
 }
 defer store.Close()
+```
+
+**Example - Text Search**:
+```go
+// Search for git commands in a specific directory
+results, err := store.SearchCommands("git", "/home/user/project")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+**Example - Shell Filtering**:
+```go
+// Get all Bash commands from a directory
+bashCommands, err := store.GetCommandsByShell(history.Bash, "/home/user/project")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+**Example - Date Range Filtering**:
+```go
+// Get commands from the last 24 hours
+now := time.Now()
+yesterday := now.Add(-24 * time.Hour)
+recentCommands, err := store.GetCommandsByTimeRange(yesterday, now, "/home/user/project")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+**Example - Combined Filtering**:
+```go
+// Find all git commands executed in Bash within the last week
+filters := storage.CommandFilters{
+    Directory: "/home/user/project",
+    Pattern:   "git",
+    ShellType: history.Bash,
+    StartTime: time.Now().Add(-7 * 24 * time.Hour),
+    EndTime:   time.Now(),
+    Limit:     50,
+}
+
+results, err := store.FilterCommands(filters)
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, cmd := range results {
+    fmt.Printf("%s: %s\n", cmd.Timestamp.Format("2006-01-02 15:04"), cmd.Command)
+}
 ```
 
 ## Shell Package
@@ -485,18 +602,215 @@ func main() {
 }
 ```
 
+## CLI Command Parameters
+
+The CLI supports various parameter combinations for flexible command history management:
+
+### History Command Flags
+
+```bash
+# View history with multiple filters
+tracker history --dir /project --limit 10 --since 6h --shell bash
+
+# Non-interactive mode for scripting
+tracker history --no-interactive
+```
+
+**Available Flags**:
+- `--dir`: Filter by specific directory
+- `--limit`: Limit number of results
+- `--since`: Show commands since time period (e.g., "6h", "2d", "1w")
+- `--shell`: Filter by shell type (bash, zsh, powershell, cmd)
+- `--no-interactive`: Disable interactive mode for scripting
+
+### Search Command Flags
+
+```bash
+# Search across all directories
+tracker search "git commit" --all-dirs --limit 20
+
+# Case-sensitive search
+tracker search "MyCommand" --case-sensitive
+```
+
+**Available Flags**:
+- `--all-dirs`: Search across all directories (not just current)
+- `--case-sensitive`: Enable case-sensitive matching
+- `--limit`: Limit number of results
+- `--no-interactive`: Disable interactive mode
+
+### Browse Command Flags
+
+```bash
+# Browse with tree view
+tracker browse --tree
+
+# Browse specific directory
+tracker browse --dir /home/user/project
+```
+
+**Available Flags**:
+- `--tree`: Display directory tree view
+- `--dir`: Browse specific directory
+
+### Command Chaining
+
+The CLI supports executing multiple operations in sequence:
+
+```bash
+# Record, then search
+tracker record --command "test-cmd" --directory /test
+tracker search "test-cmd"
+
+# Configure, then verify
+tracker config set retention-days 200
+tracker config get retention-days
+
+# Record, browse, cleanup workflow
+tracker record --command "old-cmd" --directory /test
+tracker browse --dir /test
+tracker cleanup --days 2
+```
+
+## Configuration Management
+
+### Configuration Workflows
+
+The configuration system supports complete lifecycle management:
+
+```go
+// Create default configuration
+cfg := config.DefaultConfig()
+cfg.Save()
+
+// Load and modify
+loadedCfg, _ := config.Load()
+loadedCfg.RetentionDays = 365
+loadedCfg.MaxCommands = 50000
+loadedCfg.Save()
+
+// Validate configuration
+if err := cfg.Validate(); err != nil {
+    log.Printf("Invalid configuration: %v", err)
+}
+
+// Reset to defaults
+defaultCfg := config.DefaultConfig()
+defaultCfg.Save()
+```
+
+### Configuration Validation
+
+The configuration system validates all settings:
+
+**Valid Ranges**:
+- `RetentionDays`: 1-365 days
+- `MaxCommands`: 100-100000 commands
+- `StoragePath`: Non-empty string
+- `EnabledShells`: Valid shell types only
+
+**Example Validation**:
+```go
+cfg := config.DefaultConfig()
+cfg.RetentionDays = -1  // Invalid
+
+if err := cfg.Validate(); err != nil {
+    // Error: RetentionDays cannot be negative
+}
+```
+
+## Error Handling Scenarios
+
+### Comprehensive Error Coverage
+
+The API handles various error scenarios gracefully:
+
+**Missing Configuration**:
+```go
+cfg, err := config.Load()
+if err != nil {
+    // Falls back to default configuration
+    cfg = config.DefaultConfig()
+}
+```
+
+**Invalid Database Path**:
+```go
+store, err := storage.NewStorageEngine("sqlite", "/invalid/path/db")
+if err != nil {
+    log.Printf("Storage initialization failed: %v", err)
+    // Handle error appropriately
+}
+```
+
+**Nonexistent Directory Search**:
+```go
+results, err := store.SearchCommands("test", "/nonexistent")
+// Returns empty results, no error
+if len(results) == 0 {
+    log.Println("No commands found")
+}
+```
+
+**Concurrent Storage Access**:
+```go
+// Storage engine handles concurrent access safely
+var wg sync.WaitGroup
+for i := 0; i < 10; i++ {
+    wg.Add(1)
+    go func(id int) {
+        defer wg.Done()
+        record := history.CommandRecord{
+            Command: fmt.Sprintf("cmd-%d", id),
+            // ... other fields
+        }
+        store.SaveCommand(record)
+    }(i)
+}
+wg.Wait()
+```
+
 ## Thread Safety
 
-- **StorageEngine**: Thread-safe for concurrent reads and writes
+- **StorageEngine**: Thread-safe for concurrent reads and writes with SQLite WAL mode
 - **CommandInterceptor**: Not thread-safe, use single instance per process
 - **HistoryBrowser**: Not thread-safe, designed for single-threaded UI
+- **Config**: Thread-safe for reads, serialize writes through Save()
 
 ## Performance Considerations
 
 1. **Batch Operations**: Use transactions for multiple SaveCommand calls
 2. **Indexing**: Storage automatically indexes by directory and timestamp
 3. **Cleanup**: Run CleanupOldCommands periodically to maintain performance
-4. **Connection Pooling**: SQLiteStorage uses a single connection, suitable for CLI usage
+4. **Connection Pooling**: SQLiteStorage uses connection pooling with configurable limits
+5. **Concurrent Access**: SQLite WAL mode enables concurrent reads during writes
+6. **Query Optimization**: Use filters (directory, time range, shell) to reduce result sets
+
+## Testing
+
+The package includes comprehensive test coverage:
+
+- **Unit Tests**: Component-level testing for all packages
+- **Integration Tests**: End-to-end workflow testing
+- **CLI Tests**: Command-line interface parameter combinations
+- **Error Handling Tests**: Comprehensive error scenario coverage
+- **Concurrency Tests**: Thread-safety validation
+- **Cross-Platform Tests**: Windows, macOS, and Linux compatibility
+
+**Running Tests**:
+```bash
+# All tests
+go test ./...
+
+# With coverage
+go test -cover ./...
+
+# Specific package
+go test ./cmd/tracker/...
+
+# Verbose output
+go test -v ./...
+```
 
 ## Versioning
 

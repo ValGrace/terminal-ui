@@ -7,6 +7,17 @@ A Go package that provides comprehensive terminal command history tracking and m
 - **Automatic Command Recording**: Captures all terminal commands with directory context and timestamps
 - **Cross-Platform Support**: Works with PowerShell, Bash, Zsh, and Cmd across Windows, macOS, and Linux
 - **Interactive History Browser**: Terminal-based UI for navigating command history by directory
+- **Hierarchical Directory Navigation**: 
+  - Tree view with expand/collapse functionality
+  - Breadcrumb navigation with parent directory support
+  - Visual indicators for current and inactive directories
+  - Keyboard shortcuts for efficient navigation
+- **Advanced Filtering System**:
+  - Text pattern search with real-time updates
+  - Date range filtering with presets (Today, Yesterday, This Week, etc.)
+  - Shell type filtering (PowerShell, Bash, Zsh, Cmd)
+  - Combined multi-criteria filtering with AND logic
+  - Storage-level optimized queries for large datasets
 - **Cross-Directory Navigation**: Browse and execute commands from any directory in your project structure
 - **Safe Command Execution**: Multi-layer safety system with validation, dangerous command blocking, and confirmation prompts
 - **Efficient Storage**: SQLite-based storage with retention policies and cleanup mechanisms
@@ -127,6 +138,69 @@ make check
 # Install locally
 make install
 ```
+
+### Testing
+
+The project includes comprehensive test coverage:
+
+- **Unit Tests**: Component-level testing for all packages
+- **Integration Tests**: End-to-end workflow testing
+- **CLI Tests**: Command-line interface with parameter combinations and command chaining
+- **UI Comprehensive Tests**: Complete terminal UI interaction testing including:
+  - Keyboard navigation (arrow keys, vim-style keys, page navigation)
+  - Command display and selection across different shells and exit codes
+  - Directory navigation flows (parent navigation, tree expansion/collapse)
+  - View mode switching (history view ↔ tree view)
+  - Breadcrumb updates and boundary conditions
+  - Refresh and quit functionality
+- **Directory Navigation Tests**: Hierarchical tree organization, breadcrumb navigation, and keyboard interaction testing
+- **Filtering Tests**: Complete filtering workflow with text, date, and shell filters
+- **Error Handling Tests**: Comprehensive error scenario coverage including missing configs, invalid paths, and concurrent access
+- **Configuration Tests**: Complete configuration lifecycle management and validation
+- **Cross-Platform Tests**: Shell detection and path handling across Windows, macOS, and Linux
+
+Run specific test suites:
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run CLI tests specifically
+go test ./cmd/tracker/...
+
+# Run browser tests
+go test ./internal/browser/...
+
+# Run UI comprehensive tests
+go test ./internal/browser -v -run Comprehensive
+
+# Run filtering tests
+go test ./internal/browser -v -run Filter
+go test ./internal/storage -v -run Filter
+
+# Run with verbose output
+go test -v ./...
+
+# Run integration tests only
+go test -tags=integration ./...
+```
+
+**Test Coverage Areas**:
+- CLI command parameters and flag combinations
+- Command chaining workflows (record → search → cleanup)
+- Configuration management (set → get → validate → reset)
+- UI keyboard navigation (arrow keys, vim keys, page scrolling, boundary conditions)
+- Command display formatting (shell indicators, exit codes, selection states)
+- Directory navigation (parent/child navigation, tree expansion, breadcrumbs)
+- View mode transitions (history ↔ tree view switching)
+- Filtering workflows (text + date + shell combinations)
+- Storage-level filtering with optimized queries
+- Error handling scenarios (missing files, invalid paths, concurrent access)
+- Storage operations (save, retrieve, search, cleanup)
+- Shell integration and detection
+- Safe command execution with validation
 
 ### Dependencies
 

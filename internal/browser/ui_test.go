@@ -215,6 +215,8 @@ func TestGetMaxIndex(t *testing.T) {
 		{Path: "/dir1", CommandCount: 5},
 		{Path: "/dir2", CommandCount: 3},
 	}
+	// Need to organize directories into tree structure
+	model.directoryTree = model.organizeDirectoriesHierarchically()
 	maxIndex = model.getMaxIndex()
 	if maxIndex != 1 {
 		t.Errorf("Expected maxIndex to be 1 for directory view, got %d", maxIndex)
