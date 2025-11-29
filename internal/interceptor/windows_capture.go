@@ -420,6 +420,18 @@ func (w *WindowsCapture) checkParentProcess(processNames []string) bool {
 		}
 	}
 
+	// If environment heuristics failed, try to get more process info.
+	// This references `getProcessInfo()` and uses the returned
+	// `Executable` field when available to improve detection.
+	if info, err := w.getProcessInfo(); err == nil && info != nil && info.Executable != "" {
+		procName := strings.ToLower(filepath.Base(info.Executable))
+		for _, name := range processNames {
+			if procName == strings.ToLower(name) {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 

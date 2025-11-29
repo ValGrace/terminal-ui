@@ -75,6 +75,20 @@ func (u *UnixCapture) detectUnixShell() (history.ShellType, error) {
 		return history.Bash, nil
 	}
 
+	// If environment-based checks failed, try to infer from process info
+	if info, err := u.getProcessInfo(); err == nil && info != nil && info.Executable != "" {
+		execName := strings.ToLower(filepath.Base(info.Executable))
+		if strings.Contains(execName, "zsh") {
+			return history.Zsh, nil
+		}
+		if strings.Contains(execName, "bash") {
+			return history.Bash, nil
+		}
+		if strings.Contains(execName, "pwsh") || strings.Contains(execName, "powershell") {
+			return history.PowerShell, nil
+		}
+	}
+
 	return history.Unknown, fmt.Errorf("unable to detect Unix shell")
 }
 
