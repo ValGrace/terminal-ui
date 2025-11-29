@@ -569,11 +569,11 @@ func (m UIModel) renderBreadcrumbs() string {
 
 		if i == len(m.breadcrumbs)-1 {
 			// Current directory - highlight it with enhanced styling
-			currentStyle := breadcrumbStyle.Copy().Bold(true)
+			currentStyle := breadcrumbStyle.Bold(true)
 			parts = append(parts, currentStyle.Render(displayName))
 		} else {
 			// Parent directories - show as navigable with subtle styling
-			parentStyle := dimStyle.Copy().Underline(true)
+			parentStyle := dimStyle.Underline(true)
 			parts = append(parts, parentStyle.Render(displayName))
 		}
 	}
