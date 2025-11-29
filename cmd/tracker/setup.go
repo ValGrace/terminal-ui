@@ -2,14 +2,15 @@ package main
 
 import (
 	"bufio"
-	"github.com/ValGrace/command-history-tracker/internal/config"
-	"github.com/ValGrace/command-history-tracker/internal/interceptor"
-	"github.com/ValGrace/command-history-tracker/pkg/history"
-	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/internal/interceptor"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 
 	"github.com/spf13/cobra"
 )
@@ -98,7 +99,7 @@ func runManual(cmd *cobra.Command, args []string) error {
 
 	// Get integration script
 	integrator := shell.NewIntegrator()
-	
+
 	if shellType != history.Unknown {
 		// Show instructions for detected shell
 		showManualInstructionsForShell(shellType, integrator)
@@ -200,7 +201,7 @@ func autoSetup() error {
 		fmt.Printf("Warning: Could not determine shell config path: %v\n", err)
 	} else {
 		fmt.Printf("\nShell configuration file: %s\n", configPath)
-		
+
 		// Ensure shell config file exists
 		if err := ensureShellConfigExists(shellType, configPath); err != nil {
 			fmt.Printf("Warning: Could not create shell config file: %v\n", err)
@@ -721,7 +722,7 @@ func runInteractiveSetup() error {
 		}
 	} else {
 		fmt.Printf("Shell config file: %s\n", configPath)
-		
+
 		// Check write permissions
 		if err := checkWritePermissions(configPath); err != nil {
 			fmt.Printf("\n⚠ Warning: %v\n", err)
@@ -740,21 +741,21 @@ func runInteractiveSetup() error {
 
 	// Check if already installed
 	integrator := shell.NewIntegrator()
-		isInstalled, err := integrator.IsInstalled(shellType)
-		if err == nil && isInstalled {
-			fmt.Println("\n⚠ Command recording is already configured for this shell.")
-			fmt.Print("Do you want to reconfigure? (y/N): ")
-			response, err = reader.ReadString('\n')
-			if err != nil {
-				response = ""
-			}
-			response = strings.TrimSpace(strings.ToLower(response))
-
-			if response != "y" && response != "yes" {
-				fmt.Println("Setup cancelled. Use 'tracker status' to check current configuration.")
-				return nil
-			}
+	isInstalled, err := integrator.IsInstalled(shellType)
+	if err == nil && isInstalled {
+		fmt.Println("\n⚠ Command recording is already configured for this shell.")
+		fmt.Print("Do you want to reconfigure? (y/N): ")
+		response, err = reader.ReadString('\n')
+		if err != nil {
+			response = ""
 		}
+		response = strings.TrimSpace(strings.ToLower(response))
+
+		if response != "y" && response != "yes" {
+			fmt.Println("Setup cancelled. Use 'tracker status' to check current configuration.")
+			return nil
+		}
+	}
 
 	// Load or create config
 	cfg, err := config.LoadConfig()
@@ -768,80 +769,81 @@ func runInteractiveSetup() error {
 	// Configure retention
 	fmt.Printf("Retention period: How long to keep command history\n")
 	fmt.Printf("Current: %d days\n", cfg.RetentionDays)
-		fmt.Print("Change retention period? (y/N): ")
-		response, err = reader.ReadString('\n')
-		if err != nil {
-			response = ""
-		}
-		response = strings.TrimSpace(strings.ToLower(response))
+	fmt.Print("Change retention period? (y/N): ")
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
 
-		if response == "y" || response == "yes" {
-			for {
-				fmt.Print("Enter retention period in days (1-365, default 90): ")
-				var days int
-				_, err := fmt.Fscanf(reader, "%d\n", &days)
-				if err != nil {
-					// clear remainder of line
-					if _, err := reader.ReadString('\n'); err != nil {
-						// ignore error while clearing buffer
-					}
-					fmt.Println("Invalid input. Please enter a number.")
-					continue
+	if response == "y" || response == "yes" {
+		for {
+			fmt.Print("Enter retention period in days (1-365, default 90): ")
+			var days int
+			_, err := fmt.Fscanf(reader, "%d\n", &days)
+			if err != nil {
+				// clear remainder of line
+				if _, err := reader.ReadString('\n'); err != nil {
+					_ = err
+					// ignore error while clearing buffer
 				}
-				if days > 0 && days <= 365 {
-					cfg.RetentionDays = days
-					break
-				}
-				fmt.Println("Please enter a value between 1 and 365.")
+				fmt.Println("Invalid input. Please enter a number.")
+				continue
 			}
+			if days > 0 && days <= 365 {
+				cfg.RetentionDays = days
+				break
+			}
+			fmt.Println("Please enter a value between 1 and 365.")
 		}
+	}
 
 	// Configure max commands
 	fmt.Printf("\nMax commands per directory: Limit history size per directory\n")
 	fmt.Printf("Current: %d commands\n", cfg.MaxCommands)
-		fmt.Print("Change max commands? (y/N): ")
-		response, err = reader.ReadString('\n')
-		if err != nil {
-			response = ""
-		}
-		response = strings.TrimSpace(strings.ToLower(response))
+	fmt.Print("Change max commands? (y/N): ")
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
 
-		if response == "y" || response == "yes" {
-			for {
-				fmt.Print("Enter max commands per directory (100-100000, default 10000): ")
-				var max int
-				_, err := fmt.Fscanf(reader, "%d\n", &max)
-				if err != nil {
-					// clear remainder of line
-					if _, err := reader.ReadString('\n'); err != nil {
-						// ignore error while clearing buffer
-					}
-					fmt.Println("Invalid input. Please enter a number.")
-					continue
+	if response == "y" || response == "yes" {
+		for {
+			fmt.Print("Enter max commands per directory (100-100000, default 10000): ")
+			var max int
+			_, err := fmt.Fscanf(reader, "%d\n", &max)
+			if err != nil {
+				// clear remainder of line
+				if _, err := reader.ReadString('\n'); err != nil {
+					// ignore error while clearing buffer
 				}
-				if max >= 100 && max <= 100000 {
-					cfg.MaxCommands = max
-					break
-				}
-				fmt.Println("Please enter a value between 100 and 100000.")
+				fmt.Println("Invalid input. Please enter a number.")
+				continue
 			}
+			if max >= 100 && max <= 100000 {
+				cfg.MaxCommands = max
+				break
+			}
+			fmt.Println("Please enter a value between 100 and 100000.")
 		}
+	}
 
 	// Configure auto cleanup
 	fmt.Printf("\nAuto cleanup: Automatically remove old commands based on retention policy")
 	fmt.Printf("Current: %v\n", cfg.AutoCleanup)
 	fmt.Print("Enable auto cleanup? (Y/n): ")
-		response, err = reader.ReadString('\n')
-		if err != nil {
-			response = ""
-		}
-		response = strings.TrimSpace(strings.ToLower(response))
+	response, err = reader.ReadString('\n')
+	if err != nil {
+		response = ""
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
 
-		if response == "n" || response == "no" {
-			cfg.AutoCleanup = false
-		} else {
-			cfg.AutoCleanup = true
-		}
+	if response == "n" || response == "no" {
+		cfg.AutoCleanup = false
+	} else {
+		cfg.AutoCleanup = true
+	}
 
 	// Configure exclude patterns
 	fmt.Printf("\nExclude patterns: Commands to exclude from recording\n")
@@ -891,7 +893,7 @@ func runInteractiveSetup() error {
 
 	fmt.Println("\n=== Setup Complete ===")
 	fmt.Println("\n✓ Command recording is now configured!")
-	
+
 	// Offer to verify installation
 	fmt.Print("\nWould you like to verify the installation now? (Y/n): ")
 	response, err = reader.ReadString('\n')
@@ -899,7 +901,7 @@ func runInteractiveSetup() error {
 		response = ""
 	}
 	response = strings.TrimSpace(strings.ToLower(response))
-	
+
 	if response != "n" && response != "no" {
 		fmt.Println("\nRunning verification...")
 		if err := verifySetup(shellType); err != nil {
@@ -909,7 +911,7 @@ func runInteractiveSetup() error {
 			fmt.Println("✓ Verification passed!")
 		}
 	}
-	
+
 	fmt.Println("\nNext steps:")
 	printShellRestartInstructions(shellType)
 	fmt.Println("  2. Verify setup with: tracker verify")
