@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Directory path normalization in history and browse commands to ensure consistent cross-platform lookups
 - Added shared utility function for path normalization to maintain consistency across CLI commands
-- Timestamp parsing in SQLite storage to handle both RFC3339 and SQLite datetime formats correctly
+- Enhanced timestamp parsing in SQLite storage to handle multiple formats (Unix timestamps, RFC3339, datetime strings, byte arrays) for improved compatibility and robustness
 
 ### Security
 - Command validation to prevent injection attacks

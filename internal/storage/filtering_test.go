@@ -388,9 +388,12 @@ func TestGetCommandsByTimeRange(t *testing.T) {
 			}
 
 			// Verify all results are within time range
+			// Note: Timestamps are stored with second precision, so we truncate for comparison
+			startTrunc := tt.startTime.Truncate(time.Second)
+			endTrunc := tt.endTime.Truncate(time.Second)
 			for _, cmd := range results {
-				if cmd.Timestamp.Before(tt.startTime) || cmd.Timestamp.After(tt.endTime) {
-					t.Errorf("Command timestamp %v is outside range [%v, %v]", cmd.Timestamp, tt.startTime, tt.endTime)
+				if cmd.Timestamp.Before(startTrunc) || cmd.Timestamp.After(endTrunc) {
+					t.Errorf("Command timestamp %v is outside range [%v, %v]", cmd.Timestamp, startTrunc, endTrunc)
 				}
 			}
 		})

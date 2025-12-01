@@ -18,8 +18,8 @@ Users were seeing "No directories with command history found" even after executi
    - Database query for `F:\loso` didn't match stored `F:/loso`
 
 3. **Additional issue - Timestamp parsing**:
-   - SQLite stored timestamps in multiple formats (Unix timestamps, RFC3339, datetime strings)
-   - Scanner only handled `time.Time` type, causing scan errors
+   - SQLite stored timestamps in multiple formats (Unix timestamps as int64, RFC3339 strings, datetime strings)
+   - Scanner only handled int64 Unix timestamps, causing scan errors when SQLite returned other formats
 
 ## Solution
 
@@ -39,11 +39,17 @@ func normalizeDirectoryPath(dir string) string {
 ### 2. Timestamp Parsing Fix
 
 **Updated `internal/storage/sqlite.go`**:
-- Changed `scanCommands()` to scan timestamp as string first
-- Added multi-format timestamp parsing:
-  1. Try RFC3339 format
-  2. Try SQLite datetime format (`2006-01-02 15:04:05`)
-  3. Try Unix timestamp (integer)
+- Changed `scanCommands()` to scan timestamp as `interface{}` to handle multiple types
+- Added `parseTimestampValue()` helper function with comprehensive format support:
+  1. **int64**: Unix timestamp (seconds since epoch)
+  2. **string**: Multiple string formats:
+     - RFC3339 format (`2006-01-02T15:04:05Z07:00`)
+     - SQLite datetime format (`2006-01-02 15:04:05`)
+     - Go time format with timezone (`2006-01-02 15:04:05.999999999 -0700 MST`)
+     - Unix timestamp as string
+  3. **time.Time**: Already parsed time value
+  4. **[]byte**: Byte slice converted to string and re-parsed
+  5. **Fallback**: Returns current time if all parsing fails
 
 ## Files Modified
 

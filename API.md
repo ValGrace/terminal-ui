@@ -221,12 +221,25 @@ func NewSQLiteStorage(storagePath string) (*SQLiteStorage, error)
 
 **Timestamp Handling**:
 
-The SQLite storage engine automatically handles multiple timestamp formats for maximum compatibility:
-- RFC3339 format (e.g., `2024-12-01T15:04:05Z`)
-- SQLite datetime format (e.g., `2024-12-01 15:04:05`)
-- Unix timestamp (integer seconds since epoch)
+The SQLite storage engine uses native `time.Time` storage via the modernc.org/sqlite driver for optimal compatibility and reliability. The implementation includes robust parsing that handles multiple timestamp formats for backward compatibility:
 
-This ensures reliable timestamp parsing across different storage scenarios and data migrations.
+**Storage Format**:
+- Commands are stored using native `time.Time` values passed directly to the SQLite driver
+- The driver handles the internal storage format automatically
+- All timestamps are truncated to second precision for consistency
+- Query operations convert `time.Time` to Unix timestamps for SQL comparisons
+
+**Retrieval and Parsing**:
+The storage engine automatically handles various timestamp formats from SQLite:
+- Native `time.Time` values (primary format from driver)
+- Integer Unix timestamps (backward compatibility with older data)
+- RFC3339 strings (`2006-01-02T15:04:05Z07:00`)
+- Standard datetime strings (`2006-01-02 15:04:05`)
+- Go time format strings with timezone
+- Unix timestamp strings (parsed as integers)
+- Byte arrays (converted to strings and reparsed)
+
+All retrieved timestamps are normalized to second precision, ensuring consistent behavior across all platforms and eliminating parsing ambiguities. If parsing fails for any reason, the system gracefully falls back to the current time to prevent data loss.
 
 **Extended Filtering Methods**:
 

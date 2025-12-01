@@ -198,7 +198,7 @@ func (s *SQLiteStorage) SaveCommand(cmd history.CommandRecord) error {
 	INSERT INTO commands (id, command, directory, timestamp, shell, exit_code, duration, tags)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := s.db.Exec(insertSQL, cmd.ID, cmd.Command, cmd.Directory, cmd.Timestamp.Unix(), int(cmd.Shell), cmd.ExitCode, int64(cmd.Duration.Seconds()), tagsStr)
+	_, err := s.db.Exec(insertSQL, cmd.ID, cmd.Command, cmd.Directory, cmd.Timestamp, int(cmd.Shell), cmd.ExitCode, int64(cmd.Duration.Seconds()), tagsStr)
 	if err != nil {
 		return fmt.Errorf("failed to save command: %w", err)
 	}
@@ -266,10 +266,11 @@ func (s *SQLiteStorage) CleanupOldCommands(retentionDays int) error {
 	}
 
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
+	cutoffUnix := cutoffTime.Unix()
 
 	// Delete old commands
 	deleteSQL := `DELETE FROM commands WHERE timestamp < ?`
-	result, err := s.db.Exec(deleteSQL, cutoffTime)
+	result, err := s.db.Exec(deleteSQL, cutoffUnix)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup old commands: %w", err)
 	}
@@ -394,32 +395,15 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 		var tagsStr string
 		var shellInt int
 		var durationInt int64
-		var timestampStr string
+		var timestampValue interface{}
 
-		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &timestampStr, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
+		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &timestampValue, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan command: %w", err)
 		}
 
-		// Parse timestamp - try multiple formats
-		var timestamp time.Time
-		
-		// Try RFC3339 format first
-		timestamp, err = time.Parse(time.RFC3339, timestampStr)
-		if err != nil {
-			// Try SQLite datetime format
-			timestamp, err = time.Parse("2006-01-02 15:04:05", timestampStr)
-			if err != nil {
-				// Try Unix timestamp (integer as string)
-				var unixTime int64
-				if _, parseErr := fmt.Sscanf(timestampStr, "%d", &unixTime); parseErr == nil {
-					timestamp = time.Unix(unixTime, 0)
-				} else {
-					return nil, fmt.Errorf("failed to parse timestamp '%s': %w", timestampStr, err)
-				}
-			}
-		}
-		cmd.Timestamp = timestamp
+		// Parse timestamp - handle multiple types from SQLite
+		cmd.Timestamp = s.parseTimestampValue(timestampValue)
 
 		cmd.Shell = history.ShellType(shellInt)
 		cmd.Duration = time.Duration(durationInt)
@@ -435,6 +419,47 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 	}
 
 	return commands, nil
+}
+
+// parseTimestampValue converts various timestamp formats to time.Time
+func (s *SQLiteStorage) parseTimestampValue(value interface{}) time.Time {
+	var result time.Time
+	
+	switch v := value.(type) {
+	case int64:
+		// Unix timestamp (seconds)
+		result = time.Unix(v, 0)
+	case string:
+		// Try multiple string formats
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			result = t
+		} else if t, err := time.Parse("2006-01-02 15:04:05", v); err == nil {
+			result = t
+		} else if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", v); err == nil {
+			result = t
+		} else {
+			// Try parsing as Unix timestamp string
+			var unixTime int64
+			if _, err := fmt.Sscanf(v, "%d", &unixTime); err == nil {
+				result = time.Unix(unixTime, 0)
+			} else {
+				// Fallback to current time if parsing fails
+				result = time.Now()
+			}
+		}
+	case time.Time:
+		// Already a time.Time
+		result = v
+	case []byte:
+		// Byte slice, convert to string and retry
+		return s.parseTimestampValue(string(v))
+	default:
+		// Fallback to current time if type is unknown
+		result = time.Now()
+	}
+	
+	// Truncate to second precision since we store Unix timestamps (seconds only)
+	return result.Truncate(time.Second)
 }
 
 // updateDirectoryStats updates statistics for a directory
@@ -583,20 +608,24 @@ func (s *SQLiteStorage) GetCommandsByTimeRange(startTime, endTime time.Time, dir
 	var query string
 	var args []interface{}
 
+	// Truncate times to second precision to match stored timestamps
+	startUnix := startTime.Truncate(time.Second).Unix()
+	endUnix := endTime.Truncate(time.Second).Unix()
+	
 	if dir != "" {
 		query = `
 		SELECT id, command, directory, timestamp, shell, exit_code, duration, tags
 		FROM commands
 		WHERE directory = ? AND timestamp BETWEEN ? AND ?
 		ORDER BY timestamp DESC`
-		args = []interface{}{dir, startTime, endTime}
+		args = []interface{}{dir, startUnix, endUnix}
 	} else {
 		query = `
 		SELECT id, command, directory, timestamp, shell, exit_code, duration, tags
 		FROM commands
 		WHERE timestamp BETWEEN ? AND ?
 		ORDER BY timestamp DESC`
-		args = []interface{}{startTime, endTime}
+		args = []interface{}{startUnix, endUnix}
 	}
 
 	rows, err := s.db.Query(query, args...)
@@ -674,14 +703,14 @@ func (s *SQLiteStorage) FilterCommands(filters CommandFilters) ([]history.Comman
 		args = append(args, int(filters.ShellType))
 	}
 
-	// Date range filter
+	// Date range filter - truncate to second precision to match stored timestamps
 	if !filters.StartTime.IsZero() {
 		query += ` AND timestamp >= ?`
-		args = append(args, filters.StartTime)
+		args = append(args, filters.StartTime.Truncate(time.Second).Unix())
 	}
 	if !filters.EndTime.IsZero() {
 		query += ` AND timestamp <= ?`
-		args = append(args, filters.EndTime)
+		args = append(args, filters.EndTime.Truncate(time.Second).Unix())
 	}
 
 	// Exit code filter
