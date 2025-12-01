@@ -60,6 +60,9 @@ func runBrowse(cmd *cobra.Command, args []string) error {
 		dir = cwd
 	}
 
+	// Normalize directory path to match storage format (forward slashes)
+	dir = normalizeDirectoryPath(dir)
+
 	// Set current directory
 	if err := b.SetCurrentDirectory(dir); err != nil {
 		return fmt.Errorf("failed to set directory: %w", err)

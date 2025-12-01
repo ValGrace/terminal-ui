@@ -219,6 +219,15 @@ SQLite-based implementation of the StorageEngine interface with advanced filteri
 func NewSQLiteStorage(storagePath string) (*SQLiteStorage, error)
 ```
 
+**Timestamp Handling**:
+
+The SQLite storage engine automatically handles multiple timestamp formats for maximum compatibility:
+- RFC3339 format (e.g., `2024-12-01T15:04:05Z`)
+- SQLite datetime format (e.g., `2024-12-01 15:04:05`)
+- Unix timestamp (integer seconds since epoch)
+
+This ensures reliable timestamp parsing across different storage scenarios and data migrations.
+
 **Extended Filtering Methods**:
 
 ```go

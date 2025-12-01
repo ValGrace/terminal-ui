@@ -1,15 +1,16 @@
 package interceptor
 
 import (
-	"github.com/ValGrace/command-history-tracker/internal/config"
-	"github.com/ValGrace/command-history-tracker/pkg/history"
-	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 )
 
 // CommandProcessor handles the processing of intercepted commands

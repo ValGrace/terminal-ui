@@ -63,6 +63,9 @@ func runHistory(cmd *cobra.Command, args []string) error {
 		dir = cwd
 	}
 
+	// Normalize directory path to match storage format (forward slashes)
+	dir = normalizeDirectoryPath(dir)
+
 	// If interactive mode, launch browser
 	if !historyFlags.noInteractive {
 		b := browser.NewBrowser(storageEngine)

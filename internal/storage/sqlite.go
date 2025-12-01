@@ -54,6 +54,7 @@ func (s *SQLiteStorage) Initialize() error {
 		"PRAGMA cache_size=-64000",  // 64MB cache
 		"PRAGMA temp_store=MEMORY",  // Store temp tables in memory
 		"PRAGMA busy_timeout=5000",  // Wait up to 5 seconds on lock
+		"PRAGMA integrity_check=1",  // Enable integrity check
 	}
 
 	for _, pragma := range pragmas {
@@ -197,7 +198,7 @@ func (s *SQLiteStorage) SaveCommand(cmd history.CommandRecord) error {
 	INSERT INTO commands (id, command, directory, timestamp, shell, exit_code, duration, tags)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := s.db.Exec(insertSQL, cmd.ID, cmd.Command, cmd.Directory, cmd.Timestamp, int(cmd.Shell), cmd.ExitCode, int64(cmd.Duration), tagsStr)
+	_, err := s.db.Exec(insertSQL, cmd.ID, cmd.Command, cmd.Directory, cmd.Timestamp.Unix(), int(cmd.Shell), cmd.ExitCode, int64(cmd.Duration.Seconds()), tagsStr)
 	if err != nil {
 		return fmt.Errorf("failed to save command: %w", err)
 	}
@@ -393,11 +394,32 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 		var tagsStr string
 		var shellInt int
 		var durationInt int64
+		var timestampStr string
 
-		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &cmd.Timestamp, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
+		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &timestampStr, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan command: %w", err)
 		}
+
+		// Parse timestamp - try multiple formats
+		var timestamp time.Time
+		
+		// Try RFC3339 format first
+		timestamp, err = time.Parse(time.RFC3339, timestampStr)
+		if err != nil {
+			// Try SQLite datetime format
+			timestamp, err = time.Parse("2006-01-02 15:04:05", timestampStr)
+			if err != nil {
+				// Try Unix timestamp (integer as string)
+				var unixTime int64
+				if _, parseErr := fmt.Sscanf(timestampStr, "%d", &unixTime); parseErr == nil {
+					timestamp = time.Unix(unixTime, 0)
+				} else {
+					return nil, fmt.Errorf("failed to parse timestamp '%s': %w", timestampStr, err)
+				}
+			}
+		}
+		cmd.Timestamp = timestamp
 
 		cmd.Shell = history.ShellType(shellInt)
 		cmd.Duration = time.Duration(durationInt)

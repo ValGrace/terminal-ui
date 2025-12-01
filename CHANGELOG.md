@@ -31,7 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Fixed
-- N/A
+- Directory path normalization in history and browse commands to ensure consistent cross-platform lookups
+- Added shared utility function for path normalization to maintain consistency across CLI commands
+- Timestamp parsing in SQLite storage to handle both RFC3339 and SQLite datetime formats correctly
 
 ### Security
 - Command validation to prevent injection attacks

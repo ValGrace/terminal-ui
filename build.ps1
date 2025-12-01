@@ -30,9 +30,8 @@ if ($GitCommit -eq "") {
 }
 
 # Build flags
-$ldflags = "-X command-history-tracker/internal/version.Version=$Version " +
-           "-X command-history-tracker/internal/version.GitCommit=$GitCommit " +
-           "-X command-history-tracker/internal/version.BuildDate=$BuildDate"
+# Build ldflags as a single string to avoid PowerShell line-continuation parsing issues
+$ldflags = "-X command-history-tracker/internal/version.Version=$Version -X command-history-tracker/internal/version.GitCommit=$GitCommit -X command-history-tracker/internal/version.BuildDate=$BuildDate"
 
 # Output directory
 $outDir = "dist"
@@ -58,7 +57,7 @@ Write-Host "Build Date: $BuildDate" -ForegroundColor Gray
 Write-Host ""
 
 # Build function
-function Build-Binary {
+
     param(
         [string]$OS,
         [string]$Arch,
@@ -82,7 +81,7 @@ function Build-Binary {
         Write-Host "✗ Failed to build $Output" -ForegroundColor Red
         exit 1
     }
-}
+
 
 # Build for specified platforms
 if ($All -or (!$Windows -and !$Linux -and !$MacOS)) {

@@ -1,15 +1,17 @@
 package interceptor
 
 import (
-	"github.com/ValGrace/command-history-tracker/internal/config"
-	"github.com/ValGrace/command-history-tracker/pkg/history"
-	"github.com/ValGrace/command-history-tracker/pkg/shell"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/ValGrace/command-history-tracker/internal/config"
+	"github.com/ValGrace/command-history-tracker/pkg/history"
+	"github.com/ValGrace/command-history-tracker/pkg/shell"
 )
 
 // CommandCapture handles the actual capturing and processing of commands
@@ -435,12 +437,7 @@ func (c *CommandCapture) isTrackerCommand(command string) bool {
 
 func (c *CommandCapture) isSkippableBuiltin(command string) bool {
 	builtins := []string{"cd", "pwd", "ls", "dir", "echo", "exit", "clear", "cls"}
-	for _, builtin := range builtins {
-		if command == builtin {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(builtins, command)
 }
 
 func (c *CommandCapture) isProjectRoot(directory string) bool {

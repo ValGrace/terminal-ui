@@ -1,0 +1,7 @@
+vendor/*
+commands.db
+*.log
+.DS_Store
+.idea/  
+.vscode/
+test.db
