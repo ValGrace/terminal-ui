@@ -79,7 +79,7 @@ type CommandRecord struct {
     ID          string
     Command     string
     Directory   string
-    Timestamp   time.Time
+    Timestamp   int64         // Unix timestamp in seconds
     Shell       ShellType
     ExitCode    int
     Duration    time.Duration
@@ -136,14 +136,14 @@ type CommandExecutor interface {
 
 ```go
 type CommandRecord struct {
-    ID          string    `json:"id" db:"id"`
-    Command     string    `json:"command" db:"command"`
-    Directory   string    `json:"directory" db:"directory"`
-    Timestamp   time.Time `json:"timestamp" db:"timestamp"`
-    Shell       ShellType `json:"shell" db:"shell"`
-    ExitCode    int       `json:"exit_code" db:"exit_code"`
+    ID          string        `json:"id" db:"id"`
+    Command     string        `json:"command" db:"command"`
+    Directory   string        `json:"directory" db:"directory"`
+    Timestamp   int64         `json:"timestamp" db:"timestamp"` // Unix timestamp in seconds
+    Shell       ShellType     `json:"shell" db:"shell"`
+    ExitCode    int           `json:"exit_code" db:"exit_code"`
     Duration    time.Duration `json:"duration" db:"duration"`
-    Tags        []string  `json:"tags" db:"tags"`
+    Tags        []string      `json:"tags" db:"tags"`
 }
 ```
 

@@ -35,7 +35,7 @@ func (s *SQLiteStorage) Initialize() error {
 	}
 
 	// Open database connection
-	db, err := sql.Open("sqlite", s.dbPath)
+	db, err := sql.Open("sqlite", s.dbPath+"?parseTime=True")
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -395,9 +395,9 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 		var tagsStr string
 		var shellInt int
 		var durationInt int64
-		var timestampValue interface{}
+		var timestampValue time.Time
 
-		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &timestampValue, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
+		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &cmd.Timestamp, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan command: %w", err)
 		}
@@ -424,7 +424,7 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 // parseTimestampValue converts various timestamp formats to time.Time
 func (s *SQLiteStorage) parseTimestampValue(value interface{}) time.Time {
 	var result time.Time
-	
+
 	switch v := value.(type) {
 	case int64:
 		// Unix timestamp (seconds)
@@ -457,7 +457,7 @@ func (s *SQLiteStorage) parseTimestampValue(value interface{}) time.Time {
 		// Fallback to current time if type is unknown
 		result = time.Now()
 	}
-	
+
 	// Truncate to second precision since we store Unix timestamps (seconds only)
 	return result.Truncate(time.Second)
 }
@@ -611,7 +611,7 @@ func (s *SQLiteStorage) GetCommandsByTimeRange(startTime, endTime time.Time, dir
 	// Truncate times to second precision to match stored timestamps
 	startUnix := startTime.Truncate(time.Second).Unix()
 	endUnix := endTime.Truncate(time.Second).Unix()
-	
+
 	if dir != "" {
 		query = `
 		SELECT id, command, directory, timestamp, shell, exit_code, duration, tags

@@ -158,7 +158,7 @@ type CommandRecord struct {
     ID        string        // Unique identifier
     Command   string        // Full command text
     Directory string        // Working directory
-    Timestamp time.Time     // Execution time
+    Timestamp int64         // Execution time (Unix timestamp in seconds)
     Shell     ShellType     // Shell type
     ExitCode  int           // Exit code
     Duration  time.Duration // Execution duration
@@ -221,25 +221,42 @@ func NewSQLiteStorage(storagePath string) (*SQLiteStorage, error)
 
 **Timestamp Handling**:
 
-The SQLite storage engine uses native `time.Time` storage via the modernc.org/sqlite driver for optimal compatibility and reliability. The implementation includes robust parsing that handles multiple timestamp formats for backward compatibility:
+The SQLite storage engine uses Unix timestamps (int64) for storing command execution times. This provides optimal compatibility, performance, and eliminates timezone-related issues.
 
 **Storage Format**:
-- Commands are stored using native `time.Time` values passed directly to the SQLite driver
-- The driver handles the internal storage format automatically
-- All timestamps are truncated to second precision for consistency
-- Query operations convert `time.Time` to Unix timestamps for SQL comparisons
+- Timestamps are stored as Unix timestamps (seconds since epoch) in SQLite INTEGER columns
+- All timestamps use second precision for consistency
+- The int64 type ensures compatibility across all platforms and Go versions
+- Direct integer storage eliminates parsing ambiguities and timezone conversion issues
 
-**Retrieval and Parsing**:
-The storage engine automatically handles various timestamp formats from SQLite:
-- Native `time.Time` values (primary format from driver)
-- Integer Unix timestamps (backward compatibility with older data)
-- RFC3339 strings (`2006-01-02T15:04:05Z07:00`)
-- Standard datetime strings (`2006-01-02 15:04:05`)
-- Go time format strings with timezone
-- Unix timestamp strings (parsed as integers)
-- Byte arrays (converted to strings and reparsed)
+**Working with Timestamps**:
+When working with CommandRecord timestamps in your code:
 
-All retrieved timestamps are normalized to second precision, ensuring consistent behavior across all platforms and eliminating parsing ambiguities. If parsing fails for any reason, the system gracefully falls back to the current time to prevent data loss.
+```go
+// Creating a new command record
+record := history.CommandRecord{
+    Command:   "git status",
+    Directory: "/home/user/project",
+    Timestamp: time.Now().Unix(),  // Convert time.Time to Unix timestamp
+    Shell:     history.Bash,
+}
+
+// Converting timestamp back to time.Time for display
+timestamp := time.Unix(record.Timestamp, 0)
+fmt.Printf("Executed at: %s\n", timestamp.Format("2006-01-02 15:04:05"))
+
+// Comparing timestamps
+if record.Timestamp > time.Now().Add(-24*time.Hour).Unix() {
+    fmt.Println("Command executed within last 24 hours")
+}
+```
+
+**Benefits of Unix Timestamp Storage**:
+- **Platform Independence**: No timezone conversion issues across different systems
+- **Performance**: Direct integer comparisons in SQL queries
+- **Simplicity**: No parsing required, eliminating format ambiguities
+- **Compatibility**: Works consistently across all SQLite drivers and Go versions
+- **Precision**: Second-level precision is sufficient for command history tracking
 
 **Extended Filtering Methods**:
 
@@ -324,7 +341,8 @@ if err != nil {
 }
 
 for _, cmd := range results {
-    fmt.Printf("%s: %s\n", cmd.Timestamp.Format("2006-01-02 15:04"), cmd.Command)
+    timestamp := time.Unix(cmd.Timestamp, 0)
+    fmt.Printf("%s: %s\n", timestamp.Format("2006-01-02 15:04"), cmd.Command)
 }
 ```
 
@@ -494,7 +512,7 @@ func main() {
     record := history.CommandRecord{
         Command:   "go test ./...",
         Directory: "/home/user/project",
-        Timestamp: time.Now(),
+        Timestamp: time.Now().Unix(),
         Shell:     history.Bash,
         ExitCode:  0,
         Duration:  time.Second * 5,
@@ -531,7 +549,8 @@ func main() {
     }
     
     for _, cmd := range commands {
-        fmt.Printf("%s: %s\n", cmd.Timestamp.Format("15:04:05"), cmd.Command)
+        timestamp := time.Unix(cmd.Timestamp, 0)
+        fmt.Printf("%s: %s\n", timestamp.Format("15:04:05"), cmd.Command)
     }
 }
 ```
