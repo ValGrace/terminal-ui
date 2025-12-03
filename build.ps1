@@ -2,7 +2,7 @@
 # Supports cross-platform builds for Windows, macOS, and Linux
 
 param(
-    [string]$Version = "0.1.0",
+    [string]$Version = "0.1.2",
     [string]$GitCommit = "",
     [string]$BuildDate = "",
     [switch]$All,
