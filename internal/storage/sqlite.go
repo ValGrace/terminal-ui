@@ -395,7 +395,7 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 		var tagsStr string
 		var shellInt int
 		var durationInt int64
-		var timestampValue time.Time
+		var timestampValue string
 
 		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &cmd.Timestamp, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
 		if err != nil {
@@ -706,11 +706,11 @@ func (s *SQLiteStorage) FilterCommands(filters CommandFilters) ([]history.Comman
 	// Date range filter - truncate to second precision to match stored timestamps
 	if !filters.StartTime.IsZero() {
 		query += ` AND timestamp >= ?`
-		args = append(args, filters.StartTime.Truncate(time.Second).Unix())
+		args = append(args, filters.StartTime.Truncate(time.Second))
 	}
 	if !filters.EndTime.IsZero() {
 		query += ` AND timestamp <= ?`
-		args = append(args, filters.EndTime.Truncate(time.Second).Unix())
+		args = append(args, filters.EndTime.Truncate(time.Second))
 	}
 
 	// Exit code filter

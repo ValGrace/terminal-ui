@@ -31,7 +31,7 @@ if ($GitCommit -eq "") {
 
 # Build flags
 # Build ldflags as a single string to avoid PowerShell line-continuation parsing issues
-$ldflags = "-X command-history-tracker/internal/version.Version=$Version -X command-history-tracker/internal/version.GitCommit=$GitCommit -X command-history-tracker/internal/version.BuildDate=$BuildDate"
+$ldflags = "-X github.com/ValGrace/command-history-tracker/internal/version.Version=$Version -X github.com/ValGrace/command-history-tracker/internal/version.GitCommit=$GitCommit -X github.com/ValGrace/command-history-tracker/internal/version.BuildDate=$BuildDate"
 
 # Output directory
 $outDir = "dist"
