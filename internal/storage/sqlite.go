@@ -35,7 +35,7 @@ func (s *SQLiteStorage) Initialize() error {
 	}
 
 	// Open database connection
-	db, err := sql.Open("sqlite", s.dbPath+"?parseTime=True")
+	db, err := sql.Open("sqlite", s.dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -395,9 +395,9 @@ func (s *SQLiteStorage) scanCommands(rows *sql.Rows) ([]history.CommandRecord, e
 		var tagsStr string
 		var shellInt int
 		var durationInt int64
-		var timestampValue string
+		var timestampValue interface{}
 
-		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &cmd.Timestamp, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
+		err := rows.Scan(&cmd.ID, &cmd.Command, &cmd.Directory, &timestampValue, &shellInt, &cmd.ExitCode, &durationInt, &tagsStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan command: %w", err)
 		}
@@ -524,10 +524,15 @@ func (s *SQLiteStorage) GetDirectoryStats() ([]history.DirectoryIndex, error) {
 	var stats []history.DirectoryIndex
 	for rows.Next() {
 		var stat history.DirectoryIndex
-		err := rows.Scan(&stat.Path, &stat.CommandCount, &stat.LastUsed, &stat.IsActive)
+		var lastUsedValue interface{}
+
+		err := rows.Scan(&stat.Path, &stat.CommandCount, &lastUsedValue, &stat.IsActive)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan directory stat: %w", err)
 		}
+
+		stat.LastUsed = s.parseTimestampValue(lastUsedValue)
+
 		stats = append(stats, stat)
 	}
 
@@ -706,11 +711,11 @@ func (s *SQLiteStorage) FilterCommands(filters CommandFilters) ([]history.Comman
 	// Date range filter - truncate to second precision to match stored timestamps
 	if !filters.StartTime.IsZero() {
 		query += ` AND timestamp >= ?`
-		args = append(args, filters.StartTime.Truncate(time.Second))
+		args = append(args, filters.StartTime)
 	}
 	if !filters.EndTime.IsZero() {
 		query += ` AND timestamp <= ?`
-		args = append(args, filters.EndTime.Truncate(time.Second))
+		args = append(args, filters.EndTime)
 	}
 
 	// Exit code filter

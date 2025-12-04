@@ -241,7 +241,7 @@ func (a *AuditLogger) RotateLog() error {
 	}
 
 	// Rename current log file with timestamp
-	timestamp := time.Now().Format("20060102-150405")
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	rotatedPath := fmt.Sprintf("%s.%s", a.logPath, timestamp)
 
 	if err := os.Rename(a.logPath, rotatedPath); err != nil {
