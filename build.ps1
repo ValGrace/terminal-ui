@@ -57,7 +57,8 @@ Write-Host "Build Date: $BuildDate" -ForegroundColor Gray
 Write-Host ""
 
 # Build function
-
+function Build-Binary {
+    
     param(
         [string]$OS,
         [string]$Arch,
@@ -81,7 +82,7 @@ Write-Host ""
         Write-Host "✗ Failed to build $Output" -ForegroundColor Red
         exit 1
     }
-
+}
 
 # Build for specified platforms
 if ($All -or (!$Windows -and !$Linux -and !$MacOS)) {

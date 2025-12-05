@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -245,17 +243,18 @@ func (e *EnvironmentManager) parseShellType(shellStr string) (history.ShellType,
 
 // GenerateCommandID creates a unique identifier for a command
 func (e *EnvironmentManager) GenerateCommandID(command, directory string, timestamp time.Time) string {
-	// Prefer a high-resolution timestamp plus random suffix to avoid collisions
-	ts := timestamp.UnixNano()
-
-	// Generate 8 random bytes for entropy
-	randBytes := make([]byte, 8)
-	if _, err := rand.Read(randBytes); err != nil {
-		// Fallback to using current time nanoseconds only
-		return fmt.Sprintf("cmd_%d", ts)
+	// Create a simple hash-like ID based on command content and timestamp
+	hash := 0
+	for _, char := range command + directory + timestamp.Format(time.RFC3339Nano) {
+		hash = hash*31 + int(char)
 	}
 
-	return fmt.Sprintf("cmd_%d_%s", ts, hex.EncodeToString(randBytes))
+	// Convert to positive number and format as hex
+	if hash < 0 {
+		hash = -hash
+	}
+
+	return fmt.Sprintf("cmd_%x_%d", hash, timestamp.Unix())
 }
 
 // ValidateEnvironment checks if all required environment variables are set

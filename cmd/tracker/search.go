@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/ValGrace/command-history-tracker/internal/browser"
 	"github.com/ValGrace/command-history-tracker/internal/config"
 	"github.com/ValGrace/command-history-tracker/internal/storage"
 	"github.com/ValGrace/command-history-tracker/pkg/history"
-	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
